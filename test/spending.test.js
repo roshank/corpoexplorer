@@ -123,3 +123,38 @@ test('losses are shown as money that came from elsewhere', () => {
   assert.equal(profit.per100, -20);
   assert.equal(s.taxes.rate, null);
 });
+
+test('costs reported only as products + services are added up, and gaps get their own row', () => {
+  const ps = (id, member) => `
+    <xbrli:context id="${id}"><xbrli:entity><xbrli:identifier scheme="x">1</xbrli:identifier>
+      <xbrli:segment><xbrldi:explicitMember dimension="srt:ProductOrServiceAxis">${member}</xbrldi:explicitMember></xbrli:segment></xbrli:entity>
+      <xbrli:period><xbrli:startDate>2024-01-01</xbrli:startDate><xbrli:endDate>2024-12-31</xbrli:endDate></xbrli:period>
+    </xbrli:context>`;
+  const inst = parseInstance(`<x>${ctx('fy')}${ps('p', 'us-gaap:ProductMember')}${ps('s', 'us-gaap:ServiceMember')}
+    ${fact('us-gaap:Revenues', 1000)}
+    ${fact('us-gaap:CostOfGoodsAndServicesSold', 400, 'p')}${fact('us-gaap:CostOfGoodsAndServicesSold', 100, 's')}
+    ${fact('us-gaap:SellingGeneralAndAdministrativeExpense', 150)}
+    ${fact('us-gaap:CostsAndExpenses', 700)}
+    ${fact('us-gaap:OperatingIncomeLoss', 300)}${fact('us-gaap:IncomeTaxExpenseBenefit', 60)}${fact('us-gaap:NetIncomeLoss', 240)}</x>`);
+  const pres = parsePresentation(`<l>${presentation([
+    'us-gaap:IncomeStatementAbstract',
+    'us-gaap:Revenues',
+    'us-gaap:CostOfGoodsAndServicesSold',
+    'us-gaap:SellingGeneralAndAdministrativeExpense',
+    'us-gaap:CostsAndExpenses',
+    'us-gaap:OperatingIncomeLoss',
+    'us-gaap:IncomeTaxExpenseBenefit',
+    'us-gaap:NetIncomeLoss',
+  ])}</l>`);
+  const s = buildSpending(inst, pres, {}, '2024-12-31', 1000);
+  assert.deepEqual(
+    s.rows.map((r) => [r.label, r.per100]),
+    [
+      ['Making & delivering what they sell', 50],
+      ['Sales, marketing & overhead', 15],
+      ['Costs not itemized', 5],
+      ['Income taxes', 6],
+      ['Kept as profit', 24],
+    ],
+  );
+});

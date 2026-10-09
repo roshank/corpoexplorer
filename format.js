@@ -56,12 +56,15 @@ export function longDate(iso) {
   });
 }
 
-/** Rank tickers for a query: exact ticker, ticker prefix, name word prefix, name contains. */
+/**
+ * Rank tickers for a query: exact ticker, ticker prefix, name word prefix, name contains.
+ * Rows are [ticker, name, id?]; when an id is present, each company appears once.
+ */
 export function searchTickers(list, query, limit = 8) {
   const q = query.trim().toLowerCase();
   if (!q) return [];
   const scored = [];
-  for (const [ticker, name] of list) {
+  for (const [ticker, name, id] of list) {
     const t = ticker.toLowerCase();
     const n = name.toLowerCase();
     let score = 0;
@@ -69,11 +72,17 @@ export function searchTickers(list, query, limit = 8) {
     else if (t.startsWith(q)) score = 3;
     else if (n.startsWith(q) || n.includes(' ' + q)) score = 2;
     else if (n.includes(q)) score = 1;
-    if (score) scored.push([score, ticker, name]);
+    if (score) scored.push([score, ticker, name, id]);
   }
-  // Stable sort keeps SEC's list order (roughly by size) within a score.
-  return scored
-    .sort((a, b) => b[0] - a[0])
-    .slice(0, limit)
-    .map(([, ticker, name]) => ({ ticker, name }));
+  // Stable sort keeps the list's order (roughly by size) within a score.
+  scored.sort((a, b) => b[0] - a[0]);
+  const seen = new Set();
+  const out = [];
+  for (const [, ticker, name, id] of scored) {
+    if (id != null && seen.has(id)) continue;
+    seen.add(id);
+    out.push({ ticker, name });
+    if (out.length === limit) break;
+  }
+  return out;
 }

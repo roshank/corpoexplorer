@@ -1,15 +1,18 @@
 // "Government money": what the US government pays a company as a customer, through
-// federal awards (USAspending.gov, loaded separately), and through tax breaks (10-K).
+// federal awards (USAspending.gov, gathered when the data is built), and through tax breaks (10-K).
 
 import { longDate, money, per100 } from './format.js';
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 const pct = (part, whole) => (whole ? Math.round((part / whole) * 10000) / 100 : 0);
-const perHundred = (v) => (v > 0 && v < 0.01 ? 'less than 1¢ per $100' : `${per100(v)} per $100`);
+const perHundred = (part, whole) => {
+  const v = whole ? (part / whole) * 100 : 0;
+  return v > 0 && v < 0.005 ? 'less than 1¢ per $100' : `${per100(v)} per $100`;
+};
 const bar = (share, color) =>
   `<span class="mini"><span style="width:${Math.min(Math.max(share, 0), 1) * 100}%;background-color:${color}"></span></span>`;
 
-/** The card's markup. Federal awards fill `#federal` afterwards via loadFederal(). */
+/** The card's markup. */
 export function renderGovernment(d, short) {
   const g = d.government;
   if (!g) return '';
@@ -19,11 +22,7 @@ export function renderGovernment(d, short) {
       <p class="hint">How the US government puts money into ${esc(short)}: by buying from it, through federal awards,
         and through tax breaks that lower its tax bill.</p>
       ${renderCustomer(g.customer, d, short)}
-      <h4>Federal contracts &amp; awards</h4>
-      <div id="federal">
-        <div class="skeleton" style="height:20px;width:60%"></div>
-        <div class="skeleton" style="height:56px;margin-top:12px"></div>
-      </div>
+      ${d.federal ? renderFederal(d.federal, d, short) : ''}
       ${renderTaxBreaks(g.taxBreaks, short)}
     </div>`;
 }
@@ -66,20 +65,6 @@ function renderTaxBreaks(t, short) {
       breaks are folded into other lines, so this list isn't complete. Bars are relative to the tax owed at 21%.</p>`;
 }
 
-/** Fetch federal awards for the company and fill the `#federal` placeholder. */
-export async function loadFederal(el, d, short) {
-  if (!el) return;
-  try {
-    const res = await fetch(`/api/company/${encodeURIComponent(d.ticker)}/federal`);
-    const f = await res.json();
-    if (!el.isConnected) return;
-    if (!res.ok) throw new Error(f.error || 'Something went wrong.');
-    el.innerHTML = renderFederal(f, d, short);
-  } catch (err) {
-    if (el.isConnected) el.innerHTML = `<p class="status">${esc(err.message)}</p>`;
-  }
-}
-
 function renderFederal(f, d, short) {
   const period = `${longDate(f.period.start)} – ${longDate(f.period.end)}`;
   // The same company often has several records under one name; link the largest of each.
@@ -102,13 +87,14 @@ function renderFederal(f, d, short) {
           <li>
             <span class="label">${esc(g.label)}<span class="sub">${esc(g.note)}. ${esc(sub)}</span></span>
             ${bar(g.total / max, 'var(--s1)')}
-            <span class="amt"><span class="per">${money(g.total)}</span><span class="abs">${perHundred(pct(g.total, d.totalRevenue))}</span></span>
+            <span class="amt"><span class="per">${money(g.total)}</span><span class="abs">${perHundred(g.total, d.totalRevenue)}</span></span>
           </li>`;
           })
           .join('')}
       </ul>`
     : `<p class="status">No federal contracts or awards found for this period.</p>`;
   return `
+    <h4>Federal contracts &amp; awards</h4>
     <p class="hint">Money federal agencies committed to ${esc(short)} during its fiscal year (${period}).</p>
     ${body}
     <p class="tile-note">${who} Amounts are what agencies committed in this period, which can differ from what the company

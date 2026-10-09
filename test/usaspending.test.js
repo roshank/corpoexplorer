@@ -6,6 +6,7 @@ test('normalize drops punctuation, "The" and legal forms', () => {
   assert.equal(normalize('The Boeing Company'), 'BOEING');
   assert.equal(normalize('AMAZON.COM, INC.'), 'AMAZON COM');
   assert.equal(normalize('Johnson & Johnson'), 'JOHNSON AND JOHNSON');
+  assert.equal(normalize('JPMorgan Chase Bank, N.A.'), 'JPMORGAN CHASE BANK');
 });
 
 test('legalName keeps the legal form in one spelling', () => {
@@ -19,6 +20,7 @@ test('legalName keeps the legal form in one spelling', () => {
 test('searchKeywords adds common legal forms', () => {
   assert.deepEqual(searchKeywords(['INTEL CORP']), ['INTEL', 'INTEL CORPORATION', 'INTEL INC', 'INTEL COMPANY']);
   assert.deepEqual(searchKeywords(['GE']), []);
+  assert.deepEqual(searchKeywords(['MERCK SHARP AND DOHME']).slice(0, 2), ['MERCK SHARP AND DOHME', 'MERCK SHARP & DOHME']);
 });
 
 test('matchRecipients keeps the company and its aliases, not look-alikes or child records', () => {

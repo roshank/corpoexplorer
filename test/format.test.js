@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { displayName, shortName, money, per100, searchTickers } from '../public/format.js';
+import { displayName, shortName, money, per100, searchTickers } from '../format.js';
 
 test('displayName title-cases all-caps SEC names only', () => {
   assert.equal(displayName('MICROSOFT CORPORATION'), 'Microsoft Corporation');
@@ -33,4 +33,14 @@ test('searchTickers ranks exact ticker, then prefix, then name', () => {
   assert.deepEqual(searchTickers(list, 'aapl').map((m) => m.ticker), ['AAPL']);
   assert.deepEqual(searchTickers(list, 'apple').map((m) => m.ticker), ['AAPL', 'APLE']);
   assert.equal(searchTickers(list, 'a')[0].ticker, 'A');
+});
+
+test('searchTickers shows each company once', () => {
+  const list = [
+    ['GOOGL', 'Alphabet Inc.', 1],
+    ['GOOG', 'Alphabet Inc.', 1],
+    ['GOOS', 'Canada Goose', 2],
+  ];
+  assert.deepEqual(searchTickers(list, 'goo').map((m) => m.ticker), ['GOOGL', 'GOOS']);
+  assert.deepEqual(searchTickers(list, 'goog').map((m) => m.ticker), ['GOOG']);
 });
