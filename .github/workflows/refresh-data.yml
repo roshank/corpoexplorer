@@ -1,0 +1,48 @@
+# Rebuilds the site's data from the latest SEC filings and commits any changes.
+# GitHub Pages then republishes the site from main.
+name: Refresh data
+
+on:
+  schedule:
+    - cron: '17 6 * * 1' # Mondays, 06:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-data
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm test
+      - name: Build data
+        env:
+          # SEC requires a name and contact email on every request. Add a repository
+          # secret named SEC_USER_AGENT, e.g. "CorpoExplorer you@example.com".
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+        run: |
+          if [ -z "$SEC_USER_AGENT" ]; then
+            echo "::error::Add a repository secret named SEC_USER_AGENT (e.g. 'CorpoExplorer you@example.com'). SEC rejects requests without a contact email."
+            exit 1
+          fi
+          node scripts/build-data.js --target 500
+      - name: Commit changes
+        run: |
+          git add data
+          if git diff --cached --quiet; then
+            echo "No changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Refresh data from SEC filings"
+          git push

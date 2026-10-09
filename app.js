@@ -24,11 +24,16 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
 
 /* ---------- Search with suggestions ---------- */
 
+// [ticker, name, cik] for every company we have data for, built ahead of time from SEC filings.
 let tickers = [];
-fetch('/api/tickers')
-  .then((r) => (r.ok ? r.json() : []))
-  .then((t) => (tickers = t))
-  .catch(() => {});
+const ready = fetch('data/companies.json')
+  .then((r) => (r.ok ? r.json() : { companies: [] }))
+  .then((d) => {
+    tickers = d.companies;
+    if (d.updated) $('#updated').textContent = `, updated ${longDate(d.updated)}`;
+    return d.companies.length;
+  })
+  .catch(() => 0);
 
 let matches = [];
 let active = -1;
@@ -108,10 +113,20 @@ async function load(ticker) {
       <div class="skeleton" style="height:120px;margin-top:20px"></div>
     </div>`;
   try {
-    const res = await fetch(`/api/company/${encodeURIComponent(ticker)}`);
+    const count = await ready;
+    const entry = tickers.find((t) => t[0] === ticker);
+    if (!entry) {
+      throw new Error(
+        count
+          ? `We don't have ${ticker} yet. We cover the ${count > 400 ? 'roughly 500 largest' : 'largest'} US companies that file a 10-K annual report.`
+          : "Couldn't load the company list. Try reloading the page.",
+      );
+    }
+    const res = await fetch(`data/c/${entry[2]}.json`);
+    if (id !== requestId) return;
+    if (!res.ok) throw new Error("Couldn't load this company's data. Try reloading the page.");
     const data = await res.json();
     if (id !== requestId) return;
-    if (!res.ok) throw new Error(data.error || 'Something went wrong.');
     renderCompany(data);
   } catch (err) {
     if (id !== requestId) return;
