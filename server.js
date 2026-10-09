@@ -2,7 +2,7 @@ import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { getRevenue, getTickers, NotFound } from './lib/sec.js';
+import { getCompany, getTickers, NotFound } from './lib/sec.js';
 
 if (!process.env.SEC_USER_AGENT) {
   console.error(
@@ -28,8 +28,8 @@ createServer(async (req, res) => {
       const tickers = await getTickers();
       return json(res, 200, tickers.map(({ ticker, name }) => [ticker, name]));
     }
-    const m = url.pathname.match(/^\/api\/revenue\/([A-Za-z0-9.\-]{1,10})$/);
-    if (m) return json(res, 200, await getRevenue(m[1]));
+    const m = url.pathname.match(/^\/api\/company\/([A-Za-z0-9.\-]{1,10})$/);
+    if (m) return json(res, 200, await getCompany(m[1]));
     if (url.pathname.startsWith('/api/')) return json(res, 404, { error: 'Not found' });
 
     const file = normalize(join(PUBLIC, url.pathname === '/' ? 'index.html' : url.pathname));
