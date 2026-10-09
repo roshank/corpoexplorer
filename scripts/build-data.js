@@ -1,6 +1,6 @@
 // Build the static data the site reads: one JSON file per company plus an index.
 //
-//   SEC_USER_AGENT="Name email" node scripts/build-data.js [--target 500] [--only AAPL,MSFT]
+//   SEC_USER_AGENT="Name email" node scripts/build-data.js [--target 50] [--only AAPL,MSFT]
 //
 // Companies are taken in SEC's ticker-list order (roughly largest first) until
 // --target of them have a readable 10-K. A company whose latest filing hasn't
@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { companyFromFiling, getTickers, latestAnnualReport } from '../lib/sec.js';
 
 // Bump when the shape or the logic of the per-company data changes, to force a rebuild.
-const DATA_VERSION = 1;
+const DATA_VERSION = 4;
 const MAX_ATTEMPTS_FACTOR = 2; // look at up to target*2 companies to find `target` usable ones
 
 const DATA = fileURLToPath(new URL('../data/', import.meta.url));
@@ -21,7 +21,7 @@ const arg = (name) => {
   const i = process.argv.indexOf(`--${name}`);
   return i > 0 ? process.argv[i + 1] : null;
 };
-const target = Number(arg('target')) || 500;
+const target = Number(arg('target')) || 50;
 const only = arg('only')?.toUpperCase().split(',');
 
 const readJson = (path) =>

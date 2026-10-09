@@ -34,7 +34,7 @@ jobs:
             echo "::error::Add a repository secret named SEC_USER_AGENT (e.g. 'CorpoExplorer you@example.com'). SEC rejects requests without a contact email."
             exit 1
           fi
-          node scripts/build-data.js --target 500
+          node scripts/build-data.js --target 50
       - name: Commit changes
         run: |
           git add data

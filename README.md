@@ -10,7 +10,7 @@ SEC's filing archive doesn't allow browsers on other sites to load it (no CORS h
 
 - `data/companies.json` lists every ticker we cover.
 - `data/c/<CIK>.json` holds one company's numbers (~3KB each).
-- We cover the ~500 largest US companies that file a 10-K, taken in SEC's ticker-list order, which is roughly by size.
+- For now we cover the 50 largest companies by market cap that file a US 10-K, taken in SEC's ticker-list order, which is roughly by market cap. Change `--target` in the workflow to cover more.
 
 ### Keeping it fresh
 
@@ -63,7 +63,7 @@ lib/spending.js    Costs, taxes, profit and what happened to the profit
 
 ## Known limits
 
-- Only the ~500 largest companies are included, and the data is refreshed weekly.
+- Only the 50 largest companies are included, and the data is refreshed weekly.
 - Only US filers that file a 10-K. Foreign companies that file 20-F (e.g. TSMC, Toyota) aren't supported yet.
 - Banks and insurers report revenue differently, so their breakdowns are thinner.
 - Some companies don't tag their revenue tables in a way we can reconcile, so some views may be missing for them.
