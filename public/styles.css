@@ -479,6 +479,25 @@ h3.first {
   color: var(--ink-2);
 }
 
+/* Government money */
+.tiles + .card {
+  margin-top: 16px;
+}
+.gov h4 {
+  font-size: 15px;
+  font-weight: 650;
+  margin: 28px 0 0;
+}
+.gov .hint strong {
+  color: var(--ink);
+}
+.gov-stat .big {
+  margin-top: 4px;
+}
+.filing-label {
+  color: var(--muted);
+}
+
 .hatch {
   background-image: repeating-linear-gradient(45deg, transparent 0 3px, rgba(127, 127, 127, 0.35) 3px 5px);
 }

@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getCompany, getTickers, NotFound } from './lib/sec.js';
+import { getFederalAwards } from './lib/usaspending.js';
 
 if (!process.env.SEC_USER_AGENT) {
   console.error(
@@ -30,6 +31,12 @@ createServer(async (req, res) => {
     }
     const m = url.pathname.match(/^\/api\/company\/([A-Za-z0-9.\-]{1,10})$/);
     if (m) return json(res, 200, await getCompany(m[1]));
+    const fed = url.pathname.match(/^\/api\/company\/([A-Za-z0-9.\-]{1,10})\/federal$/);
+    if (fed) {
+      const co = await getCompany(fed[1]);
+      const awards = await getFederalAwards(co.ticker, co.name, co.fiscalYearEnd).catch((err) => (console.error(err), null));
+      return awards ? json(res, 200, awards) : json(res, 502, { error: "Couldn't reach USAspending.gov. Try again in a moment." });
+    }
     if (url.pathname.startsWith('/api/')) return json(res, 404, { error: 'Not found' });
 
     const file = normalize(join(PUBLIC, url.pathname === '/' ? 'index.html' : url.pathname));
