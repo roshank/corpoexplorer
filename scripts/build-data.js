@@ -9,9 +9,10 @@
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { companyFromFiling, getTickers, latestAnnualReport } from '../lib/sec.js';
+import { getFederalAwards } from '../lib/usaspending.js';
 
 // Bump when the shape or the logic of the per-company data changes, to force a rebuild.
-const DATA_VERSION = 4;
+const DATA_VERSION = 5;
 const MAX_ATTEMPTS_FACTOR = 2; // look at up to target*2 companies to find `target` usable ones
 
 const DATA = fileURLToPath(new URL('../data/', import.meta.url));
@@ -59,14 +60,20 @@ for (const co of queue.slice(0, only ? queue.length : target * MAX_ATTEMPTS_FACT
     const old = await readJson(file);
     let data;
     if (old && old.v === DATA_VERSION && old.accession === filing.accession) {
-      data = old;
+      data = { ...old };
       stats.reused++;
     } else {
       data = { v: DATA_VERSION, ...(await companyFromFiling(co, filing)) };
-      await writeFile(file, JSON.stringify(data));
       stats.fresh++;
       console.log(`  build ${tag}`);
     }
+    // Agencies keep reporting awards after the year ends, so these are refreshed every build.
+    try {
+      data.federal = await getFederalAwards(co.ticker, data.name, data.fiscalYearEnd);
+    } catch (err) {
+      console.log(`  warn  ${tag}: USAspending: ${err.message}`);
+    }
+    if (JSON.stringify(data) !== JSON.stringify(old)) await writeFile(file, JSON.stringify(data));
     built.push({ co, name: data.name });
   } catch (err) {
     // Keep what we had if this was a hiccup; drop it if we never had it.

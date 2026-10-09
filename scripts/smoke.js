@@ -21,6 +21,10 @@ for (const t of tickers.length ? tickers : ['AAPL', 'AMZN', 'GOOGL', 'MSFT', 'TS
     const f = (x) => (x ? `$${x.per100.toFixed(2)}` : '—');
     console.log(`  dividends ${f(ap.dividends)} · buybacks ${f(ap.buybacks)} · investment ${f(ap.investment)}`);
     console.log(`  tax rate ${s.taxes.rate ?? '—'}% · cash taxes ${f(s.taxes.cashPaid)} · stock pay ${f(s.employees.stockPay)}`);
+    const g = r.government;
+    const B = (v) => `$${(v / 1e9).toFixed(2)}B`;
+    if (g.customer) console.log(`  government customer ${B(g.customer.value)} (${g.customer.label})`);
+    if (g.taxBreaks) console.log(`  tax breaks ${B(g.taxBreaks.total)}: ${g.taxBreaks.items.map((i) => `${i.label} ${B(i.value)}`).join(', ')}`);
   } catch (e) {
     console.log(`\n${t}: ERROR ${e.stack}`);
   }

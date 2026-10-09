@@ -51,14 +51,25 @@ Requires Node 20+. There are no dependencies to install.
    - **Taxes:** the effective tax rate (compared with the 21% federal rate) and cash taxes actually paid.
    - **Employees:** the pay line when the filing has one (banks usually do). Otherwise stock-based pay, with a note that US companies don't have to report total wages.
 
+### Government money
+
+How the US government puts money into the company, in three parts:
+
+1. **As a customer.** Defense and government contractors tag revenue from the US government on the major customers axis (`srt:MajorCustomersAxis`), e.g. Lockheed's "U.S. Government". Filers often tag parts too ("Department of Defense"), so we take the largest figure. When there's only a percentage (`ConcentrationRiskPercentage1`, e.g. Booz Allen's 98% from government contracts), we apply it to revenue.
+2. **Federal contracts & awards.** From [USAspending.gov](https://api.usaspending.gov) (no key needed), for the 10-K's fiscal year. Agencies keep reporting awards after a year ends, so the data build refreshes these every run, even when the 10-K hasn't changed. We find the company's top-level recipient records by its exact legal name ("APPLE INC", not "APPLE CORPORATION"), plus a short alias list for companies paid under another name (Alphabet → Google, Amazon → Amazon Web Services). Totals are split into contracts, grants, loans and other payments, by agency.
+3. **Tax breaks.** From the income tax rate reconciliation (21% federal tax on pre-tax profit → actual tax): R&D and other credits, the FDII export deduction, extra deductions for employee stock, profits taxed at lower foreign rates, tax-exempt income and other special deductions. Filers disagree on the sign of credits and deductions, so we use their size (they always lower the bill). Rate differences and stock deductions count only when they lower the bill. Filings under the new disclosure rules (ASU 2023-09) split lines by jurisdiction; we add those parts up. When a line is only given as a percentage, we multiply it by pre-tax income.
+
 ```
 index.html, app.js, format.js, styles.css   The site
+government.js      The "Government money" card
 data/              Pre-built company data the site reads
 scripts/build-data.js   Builds data/ from SEC filings
 lib/sec.js         EDGAR fetching (throttled, with retries)
 lib/xbrl.js        Instance, label and presentation parsing (no dependencies)
 lib/breakdown.js   Picks the revenue breakdowns and turns them into $ per 100
 lib/spending.js    Costs, taxes, profit and what happened to the profit
+lib/government.js  Government revenue and tax breaks from the 10-K
+lib/usaspending.js Federal contracts and awards from USAspending.gov
 ```
 
 ## Known limits
@@ -69,3 +80,7 @@ lib/spending.js    Costs, taxes, profit and what happened to the profit
 - Some companies don't tag their revenue tables in a way we can reconcile, so some views may be missing for them.
 - Total employee pay is only shown when the filing reports it as its own line. Most non-financial US companies don't.
 - Tax expense is the accounting figure. Cash taxes paid in the same year can be quite different, so we show both.
+- Federal awards are what agencies committed (obligated) during the fiscal year, which can differ from the revenue the company booked. Awards to subsidiaries under other names are missed unless listed in `ALIASES` in `lib/usaspending.js`.
+- USAspending.gov doesn't show some large awards, e.g. CHIPS Act funding to Intel and Micron, so those companies may show little or nothing.
+- State and local subsidies (tax abatements, incentive deals) aren't covered yet. There's no public API for them; [Good Jobs First's Subsidy Tracker](https://subsidytracker.goodjobsfirst.org/) is the main source.
+- The tax breaks list only covers what the reconciliation names. Companies fold some breaks into "other" lines.

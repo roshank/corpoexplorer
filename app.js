@@ -1,4 +1,5 @@
 import { displayName, longDate, money, per100, searchTickers, shortName } from './format.js';
+import { renderGovernment } from './government.js';
 
 const POPULAR = [
   ['AAPL', 'Apple'],
@@ -163,6 +164,7 @@ function renderCompany(d) {
       ${d.spending ? '<div id="spending"></div>' : `<p class="status">We couldn't read ${esc(short)}'s costs from this filing yet.</p>`}
     </div>
     ${d.spending ? renderAfterProfit(d.spending) + renderSpotlight(d.spending) : ''}
+    ${renderGovernment(d, short)}
 
     <p class="source">Source: <a href="${esc(d.filingUrl)}" target="_blank" rel="noopener">${esc(name)} Form 10-K</a>,
       filed ${longDate(d.filingDate)}. Figures are as reported in the filing's machine-readable data.</p>`;
