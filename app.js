@@ -24,11 +24,16 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
 
 /* ---------- Search with suggestions ---------- */
 
+// [ticker, name, cik] for every company we have data for, built ahead of time from SEC filings.
 let tickers = [];
-fetch('/api/tickers')
-  .then((r) => (r.ok ? r.json() : []))
-  .then((t) => (tickers = t))
-  .catch(() => {});
+const ready = fetch('data/companies.json')
+  .then((r) => (r.ok ? r.json() : { companies: [] }))
+  .then((d) => {
+    tickers = d.companies;
+    if (d.updated) $('#updated').textContent = `, updated ${longDate(d.updated)}`;
+    return d.companies.length;
+  })
+  .catch(() => 0);
 
 let matches = [];
 let active = -1;
@@ -108,10 +113,20 @@ async function load(ticker) {
       <div class="skeleton" style="height:120px;margin-top:20px"></div>
     </div>`;
   try {
-    const res = await fetch(`/api/company/${encodeURIComponent(ticker)}`);
+    const count = await ready;
+    const entry = tickers.find((t) => t[0] === ticker);
+    if (!entry) {
+      throw new Error(
+        count
+          ? `We don't have ${ticker} yet. For now we cover the 50 largest US companies that file a 10-K annual report.`
+          : "Couldn't load the company list. Try reloading the page.",
+      );
+    }
+    const res = await fetch(`data/c/${entry[2]}.json`);
+    if (id !== requestId) return;
+    if (!res.ok) throw new Error("Couldn't load this company's data. Try reloading the page.");
     const data = await res.json();
     if (id !== requestId) return;
-    if (!res.ok) throw new Error(data.error || 'Something went wrong.');
     renderCompany(data);
   } catch (err) {
     if (id !== requestId) return;
@@ -198,6 +213,7 @@ function renderSpending(el, s) {
     if (r.kind === 'other' && r.value > 0) sub = 'Interest on debt and other items outside day-to-day business';
     if (r.kind === 'other' && r.value < 0) sub = 'Interest, investment gains and other money not from customers';
     if (r.kind === 'profit' && r.value < 0) sub = 'Spent more than it brought in, covered by savings or borrowing';
+    if (r.kind === 'tax' && r.value < 0) sub = 'A net tax benefit this year (credits or refunds), not a payment';
     return { ...r, color, hatch: r.residual, sub, badge: BADGES[r.tag] };
   });
   renderBreakdown(el, items);
@@ -243,7 +259,11 @@ function renderSpotlight(s) {
   const t = s.taxes;
   const tax = s.rows.find((r) => r.kind === 'tax');
   const taxTile =
-    t.rate != null
+    t.rate != null && t.rate < 0
+      ? `<p class="big">${t.rate}%</p>
+         <p class="tile-lede">It got a net tax <em>benefit</em> this year (credits or refunds) instead of owing income tax on its
+           profit. The US federal rate is 21%.</p>`
+      : t.rate != null
       ? `<p class="big">${t.rate}%</p>
          <p class="tile-lede">of its pre-tax profit went to income taxes. The US federal rate is 21%.</p>`
       : `<p class="big">${per100(tax.per100)}</p><p class="tile-lede">per $100 went to income taxes.</p>`;
