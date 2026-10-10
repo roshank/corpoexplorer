@@ -626,9 +626,34 @@ h3.first {
   border-top: 1px solid var(--hairline);
   font-variant-numeric: tabular-nums;
 }
+.split li span:first-child {
+  min-width: 0;
+}
 .split li.over {
   color: var(--muted);
 }
+/* Once a company is showing, the intro shrinks to just the search */
+.has-company .hero {
+  padding: 20px 0 4px;
+}
+.has-company .hero h1,
+.has-company .hero .lede {
+  display: none;
+}
+@media (max-width: 520px) {
+  .has-company .chips {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    margin: 12px -16px 0;
+    padding: 0 16px 4px;
+    scrollbar-width: none;
+  }
+  .has-company .chips button {
+    flex: none;
+  }
+}
+
 .gov-line {
   display: block;
   margin-top: 12px;

@@ -107,6 +107,7 @@ async function load(ticker) {
   const id = ++requestId;
   [...chips.children].forEach((b) => b.setAttribute('aria-pressed', b.dataset.ticker === ticker));
   result.hidden = false;
+  document.body.classList.add('has-company');
   result.innerHTML = `
     <div class="card">
       <p class="eyebrow">${esc(ticker)} · Reading the annual report…</p>
@@ -239,10 +240,23 @@ function renderTopline(d, short) {
   const biggest = s.rows
     .filter((r) => r.kind === 'cost' && !r.residual && !r.folded && r.per100 > 0)
     .sort((a, b) => b.per100 - a.per100)
-    .slice(0, 3)
-    .map((r) => `${esc(r.label.toLowerCase())} ${per100(r.per100)}`);
+    .slice(0, 3);
+  const rest = Math.round((costs - biggest.reduce((sum, r) => sum + r.per100, 0)) * 100) / 100;
+  // When income from outside the main business outweighs the smaller costs, show it being subtracted.
+  const costRows = [
+    ...biggest.map((r) => [esc(r.label), r.per100]),
+    ...(rest >= 0.01 ? [['Everything else', rest]] : rest <= -0.01 ? [['Minus other income', rest]] : []),
+  ];
+
   const t = d.government?.taxBreaks;
   const at21 = t?.pretaxIncome > 0 ? (t.statutoryTax / d.totalRevenue) * 100 : null;
+  const cash = s.taxes?.cashPaid?.per100;
+  const taxRows = [
+    ...(at21 != null ? [['At the 21% federal rate', at21]] : []),
+    ...(cash != null ? [['Cash actually paid', cash]] : []),
+  ];
+  const list = (rows) =>
+    rows.length ? `<ul class="split">${rows.map(([label, v]) => `<li><span>${label}</span><span>${per100(v)}</span></li>`).join('')}</ul>` : '';
 
   // What happened to what was left: dividends, buybacks, and the rest kept in the business.
   const { dividends, buybacks, investment } = s.afterProfit;
@@ -273,16 +287,15 @@ function renderTopline(d, short) {
       </div>
       <div class="blocks">
         <div class="block">
-          <p class="block-head"><span class="dot" style="background-color:var(--s1)"></span>Cost of running the business</p>
+          <p class="block-head"><span class="dot" style="background-color:var(--s1)"></span>Running the business</p>
           <p class="big">${per100(costs)}</p>
-          <p class="block-note">Employees, materials, factories, marketing, research and interest.
-            ${biggest.length ? `Biggest: ${biggest.join(', ')}.` : ''}</p>
+          ${list(costRows)}
         </div>
         <div class="block">
           <p class="block-head"><span class="dot" style="background-color:var(--s7)"></span>Taxes</p>
           <p class="big">${per100(tax)}</p>
-          <p class="block-note">${tax < 0 ? 'A net tax benefit this year (credits or refunds).' : 'Income taxes: federal, state and foreign.'}
-            ${at21 != null ? `It would be ${per100(at21)} at the 21% federal rate.` : ''}</p>
+          ${tax < 0 ? '<p class="block-note">A net tax benefit this year (credits or refunds).</p>' : ''}
+          ${list(taxRows)}
         </div>
         <div class="block">
           <p class="block-head"><span class="dot" style="background-color:var(${left >= 0 ? '--s3' : '--s8'})"></span>${left >= 0 ? 'Left over' : 'Lost'}</p>
@@ -443,6 +456,7 @@ window.addEventListener('popstate', () => {
   if (t) go(t, false);
   else {
     result.hidden = true;
+    document.body.classList.remove('has-company');
     input.value = '';
   }
 });
