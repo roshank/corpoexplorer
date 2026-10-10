@@ -239,7 +239,12 @@ function renderWhoGets(d, short) {
       : '';
   if (!w) return publicLine;
 
-  const { other, workers, governments: g, owners, kept } = w;
+  const { other, workers, workersMissing, governments: g, owners, kept } = w;
+  const missingReason = {
+    headcount: `${esc(short)}\u2019s filings don\u2019t say how many people it employs`,
+    medianPay: `${esc(short)}\u2019s filings don\u2019t give its median employee\u2019s pay`,
+    implausible: 'the employee count and median pay in its filings don\u2019t give a believable total',
+  }[workersMissing];
   const amount = (v) => (v < 0 ? per100(v) : cents(v));
   const blocks = [
     {
@@ -250,6 +255,13 @@ function renderWhoGets(d, short) {
       sub: `Suppliers, materials, rent, advertising, interest and other costs${
         workers ? '' : ', plus employee pay, which the filing doesn’t report separately'
       }. <a href="#costs">See every cost line ↓</a>`,
+    },
+    !workers && {
+      key: 'workers',
+      color: '--neutral-fill',
+      label: 'Workers',
+      value: null,
+      sub: `${missingReason[0].toUpperCase()}${missingReason.slice(1)}, so we can\u2019t estimate pay. It\u2019s counted in Other businesses.`,
     },
     workers && {
       key: 'workers',
@@ -300,9 +312,10 @@ function renderWhoGets(d, short) {
   ].filter(Boolean);
 
   const positive = blocks.filter((b) => b.value > 0);
+  const shown = (b) => (b.value == null ? '<span class="not-reported">Not reported</span>' : amount(b.value));
   return `
     <div class="whogets">
-      <div class="topline-bar" role="img" aria-label="${esc(blocks.map((b) => `${b.label} ${per100(b.value)}`).join(', '))}">
+      <div class="topline-bar" role="img" aria-label="${esc(blocks.filter((b) => b.value != null).map((b) => `${b.label} ${per100(b.value)}`).join(', '))}">
         ${positive.map((b) => `<span style="flex-grow:${b.value};background-color:var(${b.color})"></span>`).join('')}
       </div>
       <ul class="rows who-rows">
@@ -312,7 +325,7 @@ function renderWhoGets(d, short) {
         <li>
           <span class="swatch" style="background-color:var(${b.color})"></span>
           <span class="label">${b.label}<span class="sub">${b.sub}</span></span>
-          <span class="amt"><span class="per">${amount(b.value)}</span></span>
+          <span class="amt"><span class="per">${shown(b)}</span></span>
         </li>`,
           )
           .join('')}

@@ -15,7 +15,7 @@ export function displayName(name) {
 /** "Apple Inc." -> "Apple", "The Coca-Cola Company" -> "Coca-Cola". */
 export function shortName(name) {
   let s = displayName(name).trim();
-  const suffix = /,?\s+(&\s+)?(inc\.?|incorporated|corp\.?|corporation|co\.?|company|ltd\.?|limited|plc|llc|l\.p\.|n\.v\.|s\.a\.|holdings?|group)$/i;
+  const suffix = /,?\s+((?:&|and)\s+)?(inc\.?|incorporated|corp\.?|corporation|co\.?|company|ltd\.?|limited|plc|llc|l\.p\.|n\.v\.|s\.a\.|holdings?|group)$/i;
   for (let prev = ''; prev !== s; ) {
     prev = s;
     s = s.replace(suffix, '').trim();

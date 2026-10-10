@@ -601,6 +601,11 @@ h3.first {
 .who-rows .amt .per {
   font-size: 22px;
 }
+.not-reported {
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 500;
+}
 
 /* Once a company is showing, the intro shrinks to just the search */
 .has-company .hero {

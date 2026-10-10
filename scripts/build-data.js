@@ -12,7 +12,7 @@ import { companyFromFiling, getTickers, latestAnnualReport } from '../lib/sec.js
 import { getFederalAwards } from '../lib/usaspending.js';
 
 // Bump when the shape or the logic of the per-company data changes, to force a rebuild.
-const DATA_VERSION = 9;
+const DATA_VERSION = 10;
 const MAX_ATTEMPTS_FACTOR = 2; // look at up to target*2 companies to find `target` usable ones
 // Companies covered on top of the largest `target`, whatever their size.
 const ALWAYS_INCLUDE = ['IBM'];
