@@ -1,5 +1,6 @@
 import { displayName, longDate, money, per100, searchTickers, shortName } from './format.js';
 import { cents, governmentShare, renderGovernment } from './government.js';
+import { explainRow } from './explain.js';
 
 const POPULAR = [
   ['AAPL', 'Apple'],
@@ -106,6 +107,7 @@ async function load(ticker) {
   const id = ++requestId;
   [...chips.children].forEach((b) => b.setAttribute('aria-pressed', b.dataset.ticker === ticker));
   result.hidden = false;
+  document.body.classList.add('has-company');
   result.innerHTML = `
     <div class="card">
       <p class="eyebrow">${esc(ticker)} · Reading the annual report…</p>
@@ -150,7 +152,7 @@ function renderCompany(d) {
       </div>
       <h2>For every $100 ${esc(short)} brings in…</h2>
       <p class="total">Total revenue: <strong>${money(d.totalRevenue, true)}</strong></p>
-      ${renderGlance(d)}
+      ${renderTopline(d, short)}
 
       <h3>Where it comes from</h3>
       ${
@@ -165,7 +167,7 @@ function renderCompany(d) {
 
     <div class="card">
       <h3 class="first">Where it goes</h3>
-      ${d.spending ? '<div id="spending"></div>' + renderAfterProfit(d.spending) : `<p class="status">We couldn't read ${esc(short)}'s costs from this filing yet.</p>`}
+      ${d.spending ? '<div id="spending"></div>' : `<p class="status">We couldn't read ${esc(short)}'s costs from this filing yet.</p>`}
     </div>
     ${renderGovernment(d, short)}
     ${d.spending ? renderEmployees(d.spending) : ''}
@@ -198,7 +200,7 @@ function renderCompany(d) {
     showView(d.views[0]);
   }
 
-  if (d.spending) renderSpending(result.querySelector('#spending'), d.spending);
+  if (d.spending) renderSpending(result.querySelector('#spending'), d.spending, d, short);
 
   result.classList.toggle('show-details', showDetails);
   result.querySelector('.details-toggle').addEventListener('click', (e) => {
@@ -217,37 +219,100 @@ try {
   showDetails = localStorage.getItem('showDetails') === '1';
 } catch {}
 
-/** The story in four numbers, each per $100 of revenue. */
-function renderGlance(d) {
-  const tiles = [];
-  const gov = governmentShare(d);
-  if (gov) {
-    tiles.push(`<a class="glance-tile gov-tile" href="#government">
-      <span class="big">${cents(gov.per100)}</span>
-      <span class="glance-label">came from the government</span>
-      <span class="glance-note">${money(gov.value)}, ${gov.note}</span></a>`);
-  }
+/**
+ * The simplest cut of the $100, in three blocks that add up to exactly $100:
+ * what it cost to run the business, what went to taxes, and what was left over.
+ */
+function renderTopline(d, short) {
   const s = d.spending;
-  if (s) {
-    const costs = s.rows.filter((r) => r.kind === 'cost' || (r.kind === 'other' && r.per100 > 0)).reduce((t, r) => t + r.per100, 0);
-    const tax = s.rows.find((r) => r.kind === 'tax');
-    const profit = s.rows.find((r) => r.kind === 'profit');
-    const at21 = d.government?.taxBreaks?.pretaxIncome > 0 ? (d.government.taxBreaks.statutoryTax / d.totalRevenue) * 100 : null;
-    tiles.push(`<div class="glance-tile"><span class="big">${per100(costs)}</span><span class="glance-label">went to running the business</span></div>`);
-    tiles.push(`<a class="glance-tile" href="#government"><span class="big">${per100(tax.per100)}</span>
-      <span class="glance-label">${tax.per100 < 0 ? 'net tax benefit' : 'went to income taxes'}</span>
-      ${at21 != null ? `<span class="glance-note">${per100(at21)} at the 21% rate</span>` : ''}</a>`);
-    tiles.push(`<div class="glance-tile"><span class="big">${per100(profit.per100)}</span>
-      <span class="glance-label">${profit.per100 >= 0 ? 'kept as profit' : 'lost'}</span></div>`);
-  }
-  return tiles.length ? `<div class="glance">${tiles.join('')}</div>` : '';
+  const gov = governmentShare(d);
+  const govLine =
+    gov && gov.value > 0
+      ? `<a class="gov-line" href="#government"><strong>${cents(gov.per100)}</strong> of the $100 came from the government
+          (${money(gov.value)}, ${gov.note}) →</a>`
+      : '';
+  if (!s) return govLine;
+
+  const tax = s.rows.find((r) => r.kind === 'tax').per100;
+  const left = s.rows.find((r) => r.kind === 'profit').per100;
+  // Everything else: costs, interest, and net of any income from outside the main business.
+  const costs = Math.round((100 - tax - left) * 100) / 100;
+  const biggest = s.rows
+    .filter((r) => r.kind === 'cost' && !r.residual && !r.folded && r.per100 > 0)
+    .sort((a, b) => b.per100 - a.per100)
+    .slice(0, 3);
+  const rest = Math.round((costs - biggest.reduce((sum, r) => sum + r.per100, 0)) * 100) / 100;
+  // When income from outside the main business outweighs the smaller costs, show it being subtracted.
+  const costRows = [
+    ...biggest.map((r) => [esc(r.label), r.per100]),
+    ...(rest >= 0.01 ? [['Everything else', rest]] : rest <= -0.01 ? [['Minus other income', rest]] : []),
+  ];
+
+  const t = d.government?.taxBreaks;
+  const at21 = t?.pretaxIncome > 0 ? (t.statutoryTax / d.totalRevenue) * 100 : null;
+  const cash = s.taxes?.cashPaid?.per100;
+  const taxRows = [
+    ...(at21 != null ? [['At the 21% federal rate', at21]] : []),
+    ...(cash != null ? [['Cash actually paid', cash]] : []),
+  ];
+  const list = (rows) =>
+    rows.length ? `<ul class="split">${rows.map(([label, v]) => `<li><span>${label}</span><span>${per100(v)}</span></li>`).join('')}</ul>` : '';
+
+  // What happened to what was left: dividends, buybacks, and the rest kept in the business.
+  const { dividends, buybacks, investment } = s.afterProfit;
+  const paid = dividends?.per100 ?? 0;
+  const bought = buybacks?.per100 ?? 0;
+  const kept = Math.round((left - paid - bought) * 100) / 100;
+  const split =
+    left > 0
+      ? `<ul class="split">
+          ${paid ? `<li><span>Paid to shareholders</span><span>${per100(paid)}</span></li>` : ''}
+          ${bought ? `<li><span>Bought back its own stock</span><span>${per100(bought)}</span></li>` : ''}
+          ${
+            kept >= 0
+              ? `<li><span>Kept in the business</span><span>${per100(kept)}</span></li>`
+              : `<li class="over"><span>Paid out more than it earned, from savings or borrowing</span><span>${per100(-kept)}</span></li>`
+          }
+        </ul>`
+      : `<p class="block-note">Spent more than it brought in, covered by savings or borrowing.</p>`;
+
+  // Segments share the bar in proportion; a tax benefit or a loss has no segment.
+  const grow = (v) => Math.max(v, 0);
+  return `
+    <div class="topline">
+      <div class="topline-bar" role="img" aria-label="Costs ${per100(costs)}, taxes ${per100(tax)}, left over ${per100(left)}">
+        <span style="flex-grow:${grow(costs)};background-color:var(--s1)"></span>
+        <span style="flex-grow:${grow(tax)};background-color:var(--s7)"></span>
+        <span style="flex-grow:${grow(left)};background-color:var(--s3)"></span>
+      </div>
+      <div class="blocks">
+        <div class="block">
+          <p class="block-head"><span class="dot" style="background-color:var(--s1)"></span>Running the business</p>
+          <p class="big">${per100(costs)}</p>
+          ${list(costRows)}
+        </div>
+        <div class="block">
+          <p class="block-head"><span class="dot" style="background-color:var(--s7)"></span>Taxes</p>
+          <p class="big">${per100(tax)}</p>
+          ${tax < 0 ? '<p class="block-note">A net tax benefit this year (credits or refunds).</p>' : ''}
+          ${list(taxRows)}
+        </div>
+        <div class="block">
+          <p class="block-head"><span class="dot" style="background-color:var(${left >= 0 ? '--s3' : '--s8'})"></span>${left >= 0 ? 'Left over' : 'Lost'}</p>
+          <p class="big">${per100(left)}</p>
+          ${split}
+          ${investment ? `<p class="block-note fine">Separately, it spent ${per100(investment.per100)} per $100 on buildings and equipment, paid for from its cash flow.</p>` : ''}
+        </div>
+      </div>
+      ${govLine}
+    </div>`;
 }
 
 const NEUTRAL = 'var(--neutral-fill)';
 const COST_SERIES = ['--s1', '--s2', '--s4', '--s5', '--s6', '--s8'];
 const BADGES = { government: 'Goes to government', employees: 'Goes to employees' };
 
-function renderSpending(el, s) {
+function renderSpending(el, s, d, short) {
   let costIndex = 0;
   const items = s.rows.map((r) => {
     let color = NEUTRAL;
@@ -262,40 +327,9 @@ function renderSpending(el, s) {
     if (r.kind === 'other' && r.value < 0) sub = 'Interest, investment gains and other money not from customers';
     if (r.kind === 'profit' && r.value < 0) sub = 'Spent more than it brought in, covered by savings or borrowing';
     if (r.kind === 'tax' && r.value < 0) sub = 'A net tax benefit this year (credits or refunds), not a payment';
-    return { ...r, color, hatch: r.residual, sub, fine: !!sub?.startsWith('In the filing:'), badge: BADGES[r.tag] };
+    return { ...r, color, hatch: r.residual, sub, fine: !!sub?.startsWith('In the filing:'), badge: BADGES[r.tag], more: rowDetails(r, d, short) };
   });
   renderBreakdown(el, items);
-}
-
-/** What happened to the profit, as a short list under "Where it goes". */
-function renderAfterProfit(s) {
-  const profit = s.rows.find((r) => r.kind === 'profit');
-  const { dividends, buybacks, investment } = s.afterProfit;
-  const rows = [
-    ['Paid to shareholders', 'Dividends', dividends],
-    ['Bought back its own stock', 'Makes each remaining share worth more', buybacks],
-    ['Invested in buildings & equipment', 'Data centers, stores, factories, machines', investment],
-  ].filter(([, , f]) => f);
-  if (!rows.length) return '';
-  const max = Math.max(Math.abs(profit.per100), ...rows.map(([, , f]) => f.per100), 1);
-  const bar = (v) =>
-    `<span class="mini"><span style="width:${(Math.max(v, 0) / max) * 100}%;background-color:var(--ink-2)"></span></span>`;
-  return `
-    <h4>What it did with the money</h4>
-    <p class="hint">From the cash flow statement. This can add up to more than the ${per100(profit.per100)} profit:
-      companies also spend savings or borrow.</p>
-    <ul class="rows compact">
-      ${rows
-        .map(
-          ([label, sub, f]) => `
-      <li>
-        <span class="label">${label}<span class="sub fine">${sub}</span></span>
-        ${bar(f.per100)}
-        <span class="amt"><span class="per">${per100(f.per100)}</span><span class="abs">${money(f.value)}</span></span>
-      </li>`,
-        )
-        .join('')}
-    </ul>`;
 }
 
 function renderEmployees(s) {
@@ -325,12 +359,13 @@ function renderBreakdown(el, items) {
   const over = outTotal > 100.005;
 
   const row = (it, sign = '') => `
-    <li data-i="${items.indexOf(it)}">
+    <li data-i="${items.indexOf(it)}"${it.more ? ' class="expandable" tabindex="0" role="button" aria-expanded="false"' : ''}>
       <span class="swatch${it.hatch ? ' hatch' : ''}" style="background-color:${it.color}"></span>
-      <span class="label">${esc(it.label)}${it.badge ? ` <span class="badge">${esc(it.badge)}</span>` : ''}${
+      <span class="label">${esc(it.label)}${it.more ? '<span class="chev" aria-hidden="true">›</span>' : ''}${it.badge ? ` <span class="badge">${esc(it.badge)}</span>` : ''}${
         it.sub ? `<span class="sub${it.fine ? ' fine' : ''}">${esc(it.sub)}</span>` : ''
       }</span>
       <span class="amt"><span class="per">${sign}${per100(Math.abs(it.per100))}</span><span class="abs">${money(Math.abs(it.value))}</span></span>
+      ${it.more ? `<div class="row-more" hidden>${it.more}</div>` : ''}
     </li>`;
 
   el.innerHTML = `
@@ -386,7 +421,32 @@ function renderBreakdown(el, items) {
   rows.forEach((r) => {
     r.addEventListener('mouseenter', () => highlight(+r.dataset.i));
     r.addEventListener('mouseleave', () => highlight(null));
+    if (!r.classList.contains('expandable')) return;
+    const toggle = (e) => {
+      if (e.target.closest('a, .row-more')) return; // let links and text selection work
+      const open = r.getAttribute('aria-expanded') !== 'true';
+      r.setAttribute('aria-expanded', open);
+      r.querySelector('.row-more').hidden = !open;
+    };
+    r.addEventListener('click', toggle);
+    r.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') (e.preventDefault(), toggle(e));
+    });
   });
+}
+
+/** What opens under a "Where it goes" row: a general explanation and the company's own words. */
+function rowDetails(r, d, short) {
+  const general = explainRow(r);
+  if (!general && !r.description) return null;
+  return `
+    ${general ? `<p>${esc(general)}</p>` : ''}
+    ${
+      r.description
+        ? `<blockquote>${esc(r.description)}</blockquote>
+           <p class="row-more-source">${esc(short)}'s own description, from its <a href="${esc(d.filingUrl)}" target="_blank" rel="noopener">10-K</a></p>`
+        : ''
+    }`;
 }
 
 /* ---------- URL state ---------- */
@@ -396,6 +456,7 @@ window.addEventListener('popstate', () => {
   if (t) go(t, false);
   else {
     result.hidden = true;
+    document.body.classList.remove('has-company');
     input.value = '';
   }
 });
