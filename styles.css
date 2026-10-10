@@ -521,6 +521,45 @@ h3.first {
   border-color: var(--ink-2);
 }
 
+/* Rows that open to explain themselves */
+.rows li.expandable {
+  cursor: pointer;
+}
+.chev {
+  display: inline-block;
+  margin-left: 6px;
+  color: var(--muted);
+  transition: transform 150ms;
+}
+.rows li.expandable[aria-expanded='true'] .chev {
+  transform: rotate(90deg);
+}
+.rows li.expandable:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.row-more {
+  grid-column: 1 / -1;
+  margin: 10px 0 2px 24px;
+  color: var(--ink-2);
+  font-size: 14px;
+  cursor: auto;
+}
+.row-more p {
+  margin: 0 0 8px;
+}
+.row-more blockquote {
+  margin: 0 0 6px;
+  padding: 8px 12px;
+  border-left: 3px solid var(--hairline);
+  background: var(--page);
+  border-radius: 0 8px 8px 0;
+}
+.row-more-source {
+  color: var(--muted);
+  font-size: 12px;
+}
+
 /* At a glance */
 .glance {
   display: grid;

@@ -1,5 +1,6 @@
 import { displayName, longDate, money, per100, searchTickers, shortName } from './format.js';
 import { cents, governmentShare, renderGovernment } from './government.js';
+import { explainRow } from './explain.js';
 
 const POPULAR = [
   ['AAPL', 'Apple'],
@@ -198,7 +199,7 @@ function renderCompany(d) {
     showView(d.views[0]);
   }
 
-  if (d.spending) renderSpending(result.querySelector('#spending'), d.spending);
+  if (d.spending) renderSpending(result.querySelector('#spending'), d.spending, d, short);
 
   result.classList.toggle('show-details', showDetails);
   result.querySelector('.details-toggle').addEventListener('click', (e) => {
@@ -247,7 +248,7 @@ const NEUTRAL = 'var(--neutral-fill)';
 const COST_SERIES = ['--s1', '--s2', '--s4', '--s5', '--s6', '--s8'];
 const BADGES = { government: 'Goes to government', employees: 'Goes to employees' };
 
-function renderSpending(el, s) {
+function renderSpending(el, s, d, short) {
   let costIndex = 0;
   const items = s.rows.map((r) => {
     let color = NEUTRAL;
@@ -262,7 +263,7 @@ function renderSpending(el, s) {
     if (r.kind === 'other' && r.value < 0) sub = 'Interest, investment gains and other money not from customers';
     if (r.kind === 'profit' && r.value < 0) sub = 'Spent more than it brought in, covered by savings or borrowing';
     if (r.kind === 'tax' && r.value < 0) sub = 'A net tax benefit this year (credits or refunds), not a payment';
-    return { ...r, color, hatch: r.residual, sub, fine: !!sub?.startsWith('In the filing:'), badge: BADGES[r.tag] };
+    return { ...r, color, hatch: r.residual, sub, fine: !!sub?.startsWith('In the filing:'), badge: BADGES[r.tag], more: rowDetails(r, d, short) };
   });
   renderBreakdown(el, items);
 }
@@ -325,12 +326,13 @@ function renderBreakdown(el, items) {
   const over = outTotal > 100.005;
 
   const row = (it, sign = '') => `
-    <li data-i="${items.indexOf(it)}">
+    <li data-i="${items.indexOf(it)}"${it.more ? ' class="expandable" tabindex="0" role="button" aria-expanded="false"' : ''}>
       <span class="swatch${it.hatch ? ' hatch' : ''}" style="background-color:${it.color}"></span>
-      <span class="label">${esc(it.label)}${it.badge ? ` <span class="badge">${esc(it.badge)}</span>` : ''}${
+      <span class="label">${esc(it.label)}${it.more ? '<span class="chev" aria-hidden="true">›</span>' : ''}${it.badge ? ` <span class="badge">${esc(it.badge)}</span>` : ''}${
         it.sub ? `<span class="sub${it.fine ? ' fine' : ''}">${esc(it.sub)}</span>` : ''
       }</span>
       <span class="amt"><span class="per">${sign}${per100(Math.abs(it.per100))}</span><span class="abs">${money(Math.abs(it.value))}</span></span>
+      ${it.more ? `<div class="row-more" hidden>${it.more}</div>` : ''}
     </li>`;
 
   el.innerHTML = `
@@ -386,7 +388,32 @@ function renderBreakdown(el, items) {
   rows.forEach((r) => {
     r.addEventListener('mouseenter', () => highlight(+r.dataset.i));
     r.addEventListener('mouseleave', () => highlight(null));
+    if (!r.classList.contains('expandable')) return;
+    const toggle = (e) => {
+      if (e.target.closest('a, .row-more')) return; // let links and text selection work
+      const open = r.getAttribute('aria-expanded') !== 'true';
+      r.setAttribute('aria-expanded', open);
+      r.querySelector('.row-more').hidden = !open;
+    };
+    r.addEventListener('click', toggle);
+    r.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') (e.preventDefault(), toggle(e));
+    });
   });
+}
+
+/** What opens under a "Where it goes" row: a general explanation and the company's own words. */
+function rowDetails(r, d, short) {
+  const general = explainRow(r);
+  if (!general && !r.description) return null;
+  return `
+    ${general ? `<p>${esc(general)}</p>` : ''}
+    ${
+      r.description
+        ? `<blockquote>${esc(r.description)}</blockquote>
+           <p class="row-more-source">${esc(short)}'s own description, from its <a href="${esc(d.filingUrl)}" target="_blank" rel="noopener">10-K</a></p>`
+        : ''
+    }`;
 }
 
 /* ---------- URL state ---------- */

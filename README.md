@@ -54,6 +54,7 @@ Requires Node 20+. There are no dependencies to install.
 - **At a glance:** four numbers per $100 at the top: from the government, costs, income taxes (vs. the 21% rate) and profit.
 - **Show details:** filing labels, agency lists and method notes are hidden until the reader turns them on (remembered in the browser).
 - Rows under 1¢ per $100 in the Government money & taxes card are combined into one row.
+- **Click a row in "Where it goes"** to see what it means: a plain-English explanation (`explain.js`) and, when the filing has one, the company's own description of that line from its 10-K. The build pulls these from the filing text (`lib/describe.js`): the sentence that starts with the line's name and defines it ("Our cost of revenue consists of…"), up to the end of its paragraph. About a third of cost lines have one.
 - The effective tax rate and cash taxes paid are shown in the Government money & taxes card.
 
 ### Government money
@@ -66,7 +67,8 @@ How the US government puts money into the company, in three parts:
 
 ```
 index.html, app.js, format.js, styles.css   The site
-government.js      The "Government money" card
+government.js      The "Government money & taxes" card
+explain.js         Plain-English explanations for the "Where it goes" rows
 data/              Pre-built company data the site reads
 scripts/build-data.js   Builds data/ from SEC filings
 lib/sec.js         EDGAR fetching (throttled, with retries)
@@ -75,6 +77,7 @@ lib/breakdown.js   Picks the revenue breakdowns and turns them into $ per 100
 lib/spending.js    Costs, taxes, profit and what happened to the profit
 lib/government.js  Government revenue and tax breaks from the 10-K
 lib/usaspending.js Federal contracts and awards from USAspending.gov
+lib/describe.js    The company's own description of each cost line, from the 10-K text
 ```
 
 ## Known limits
