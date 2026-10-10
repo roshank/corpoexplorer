@@ -28,7 +28,14 @@ export function whoGets(d) {
     const value = w.employees * w.medianPay;
     workers = { per100: cents((value / d.totalRevenue) * 100), value, source: 'estimate', employees: w.employees, medianPay: w.medianPay, payYear: w.payYear };
   }
-  if (workers && (workers.per100 <= 0 || workers.per100 > costs * 0.9)) workers = null;
+  // Why there's no figure, for the page to say: no headcount, no median pay, or a bad estimate.
+  let workersMissing = null;
+  if (workers && (workers.per100 <= 0 || workers.per100 > costs * 0.9)) {
+    workers = null;
+    workersMissing = 'implausible';
+  } else if (!workers) {
+    workersMissing = !w?.employees ? 'headcount' : 'medianPay';
+  }
 
   // Governments, split between the US and abroad when the filing breaks it down.
   const split = d.government?.taxSplit;
@@ -46,6 +53,7 @@ export function whoGets(d) {
   return {
     other: { per100: cents(costs - (workers?.per100 ?? 0)) },
     workers,
+    workersMissing,
     governments,
     owners: { per100: cents(dividends + buybacks), dividends, buybacks },
     kept: { per100: cents(profit - dividends - buybacks), profit },

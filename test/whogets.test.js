@@ -44,6 +44,13 @@ test('whoGets prefers reported pay and handles paying out more than it earned', 
 test('whoGets leaves out a worker estimate that is implausibly large', () => {
   const w = whoGets(company({ workforce: { employees: 1000, medianPay: 1000 } }));
   assert.equal(w.workers, null);
+  assert.equal(w.workersMissing, 'implausible');
   assert.equal(w.other.per100, 65);
   assert.equal(total(w), 100);
+});
+
+test('whoGets says why workers is missing', () => {
+  assert.equal(whoGets(company({ workforce: { employees: null, medianPay: 50 } })).workersMissing, 'headcount');
+  assert.equal(whoGets(company({ workforce: { employees: 10, medianPay: null } })).workersMissing, 'medianPay');
+  assert.equal(whoGets(company()).workersMissing, null);
 });

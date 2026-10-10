@@ -13,6 +13,8 @@ test('shortName drops legal suffixes', () => {
   assert.equal(shortName('AMAZON.COM, INC.'), 'Amazon.com');
   assert.equal(shortName('The Coca-Cola Company'), 'Coca-Cola');
   assert.equal(shortName('JPMorgan Chase & Co.'), 'JPMorgan Chase');
+  assert.equal(shortName('Eli Lilly and Company'), 'Eli Lilly');
+  assert.equal(shortName('Johnson & Johnson'), 'Johnson & Johnson');
 });
 
 test('money and per100 formatting', () => {
