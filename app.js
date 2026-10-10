@@ -271,7 +271,10 @@ function renderWhoGets(d, short) {
       color: '--s5',
       label: 'Owners',
       value: owners.per100,
-      sub: `Dividends ${per100(owners.dividends)} · buybacks ${per100(owners.buybacks)}.`,
+      sub:
+        owners.per100 > 0
+          ? `Dividends ${per100(owners.dividends)} · buybacks ${per100(owners.buybacks)}.`
+          : 'It didn\u2019t pay dividends or buy back stock this year.',
     },
     {
       key: 'kept',
