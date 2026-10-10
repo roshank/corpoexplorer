@@ -37,12 +37,17 @@ export function whoGets(d) {
     workersMissing = !w?.employees ? 'headcount' : 'medianPay';
   }
 
-  // Governments, split between the US and abroad when the filing breaks it down.
+  // Governments, split between US federal, US state and local, and abroad when the filing breaks it down.
   const split = d.government?.taxSplit;
   const governments = { per100: tax, value: s.rows.find((r) => r.kind === 'tax').value };
   if (split && tax > 0 && split.total > 0 && split.us >= 0 && split.foreign >= 0) {
     governments.us = cents((tax * split.us) / split.total);
     governments.abroad = cents(tax - governments.us);
+    // US federal vs state and local, when the filing breaks it out and neither is a net benefit.
+    if (split.state != null && split.state >= 0 && split.federal >= 0) {
+      governments.state = cents((tax * split.state) / split.total);
+      governments.federal = cents(governments.us - governments.state);
+    }
   }
   const t = d.government?.taxBreaks;
   if (t?.pretaxIncome > 0) governments.at21 = cents((t.statutoryTax / d.totalRevenue) * 100);

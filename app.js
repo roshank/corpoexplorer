@@ -283,7 +283,11 @@ function renderWhoGets(d, short) {
       value: g.per100,
       sub: [
         g.per100 < 0 ? 'A net tax benefit this year (credits or refunds), not a payment.' : 'Income taxes.',
-        g.us != null ? `US ${cents(g.us)} · abroad ${cents(g.abroad)}.` : '',
+        g.state != null
+          ? `US federal ${cents(g.federal)} · US state & local ${cents(g.state)} · abroad ${cents(g.abroad)}.`
+          : g.us != null
+            ? `US ${cents(g.us)} · abroad ${cents(g.abroad)}.`
+            : '',
         g.at21 != null ? `It would be ${per100(g.at21)} at the 21% federal rate. <a href="#government">See why ↓</a>` : '',
       ].join(' '),
     },

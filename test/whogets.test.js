@@ -54,3 +54,13 @@ test('whoGets says why workers is missing', () => {
   assert.equal(whoGets(company({ workforce: { employees: 10, medianPay: null } })).workersMissing, 'medianPay');
   assert.equal(whoGets(company()).workersMissing, null);
 });
+
+test('whoGets splits US taxes into federal and state when the filing does', () => {
+  const g = whoGets(company({ government: { taxSplit: { us: 30, federal: 24, state: 6, foreign: 20, total: 50 } } })).governments;
+  assert.deepEqual([g.federal, g.state, g.abroad], [2.4, 0.6, 2]);
+  // A net state benefit, or state not reported separately: only US vs abroad.
+  const neg = whoGets(company({ government: { taxSplit: { us: 30, federal: 32, state: -2, foreign: 20, total: 50 } } })).governments;
+  assert.equal(neg.state, undefined);
+  assert.equal(neg.us, 3);
+  assert.equal(whoGets(company()).governments.state, undefined);
+});
