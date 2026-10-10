@@ -36,3 +36,22 @@ test('findMedianPay skips base salary in favor of total pay', () => {
     49630,
   );
 });
+
+test('extractHeadcount reads workforce tables', () => {
+  assert.equal(extractHeadcount('Total Employees ¶ 12,438 ¶ 29 ¶ % ¶ 30,013 ¶ 70 ¶ % ¶ 588 ¶ 1 ¶ % ¶ 43,039 ¶ 100 ¶ % ¶ * Includes'), 43039);
+  assert.equal(
+    extractHeadcount(
+      "The table below presents the company's employees and related workforce at December 31, 2025. ¶ (In thousands) ¶ For the year ended December 31: ¶ 2025 ¶ IBM/wholly owned subsidiaries ¶ 264.3 ¶ Less-than-wholly owned subsidiaries ¶ 8.7 ¶ Complementary (1) ¶ 13.8 ¶",
+    ),
+    264300,
+  );
+});
+
+test('findMedianPay reads a pay-ratio table', () => {
+  assert.deepEqual(
+    findMedianPay(
+      'The table below discloses the 2025 annual total compensation for our CEO and median paid employee: ¶ CEO Pay Ratio: ¶ CEO Annual Total Compensation* ¶ $36,698,337 ¶ Median Employee Annual Total Compensation ¶ $125,100 ¶ CEO to Median Employee Pay Ratio ¶ 293:1',
+    ),
+    { pay: 125100, year: 2025 },
+  );
+});
