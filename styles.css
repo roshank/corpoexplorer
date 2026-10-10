@@ -491,11 +491,18 @@ h3.first {
 .gov .hint strong {
   color: var(--ink);
 }
-.gov-stat .big {
-  margin-top: 4px;
+.gov-sum {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 20px;
+  margin-top: 16px;
 }
-.filing-label {
-  color: var(--muted);
+.gov-sum .big {
+  font-size: 32px;
+  margin-top: 0;
+}
+.gov-sum .tile-note {
+  margin-top: 6px;
 }
 
 .hatch {
