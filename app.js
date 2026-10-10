@@ -1,5 +1,5 @@
 import { displayName, longDate, money, per100, searchTickers, shortName } from './format.js';
-import { renderGovernment, renderGovernmentHeadline } from './government.js';
+import { cents, governmentShare, renderGovernment } from './government.js';
 
 const POPULAR = [
   ['AAPL', 'Apple'],
@@ -144,9 +144,13 @@ function renderCompany(d) {
 
   result.innerHTML = `
     <div class="card">
-      <p class="eyebrow">${esc(d.ticker)} · Fiscal year ended ${longDate(d.fiscalYearEnd)}</p>
+      <div class="card-head">
+        <p class="eyebrow">${esc(d.ticker)} · Fiscal year ended ${longDate(d.fiscalYearEnd)}</p>
+        <button type="button" class="details-toggle" aria-pressed="${showDetails}">Show details</button>
+      </div>
       <h2>For every $100 ${esc(short)} brings in…</h2>
       <p class="total">Total revenue: <strong>${money(d.totalRevenue, true)}</strong></p>
+      ${renderGlance(d)}
 
       <h3>Where it comes from</h3>
       ${
@@ -157,15 +161,14 @@ function renderCompany(d) {
              <div id="income"></div>`
           : `<p class="status">${esc(short)}'s filing doesn't break its revenue down in a way we can read yet.</p>`
       }
-      ${renderGovernmentHeadline(d)}
     </div>
 
     <div class="card">
       <h3 class="first">Where it goes</h3>
-      ${d.spending ? '<div id="spending"></div>' : `<p class="status">We couldn't read ${esc(short)}'s costs from this filing yet.</p>`}
+      ${d.spending ? '<div id="spending"></div>' + renderAfterProfit(d.spending) : `<p class="status">We couldn't read ${esc(short)}'s costs from this filing yet.</p>`}
     </div>
-    ${d.spending ? renderAfterProfit(d.spending) + renderSpotlight(d.spending) : ''}
     ${renderGovernment(d, short)}
+    ${d.spending ? renderEmployees(d.spending) : ''}
 
     <p class="source">Source: <a href="${esc(d.filingUrl)}" target="_blank" rel="noopener">${esc(name)} Form 10-K</a>,
       filed ${longDate(d.filingDate)}. Figures are as reported in the filing's machine-readable data.</p>`;
@@ -196,6 +199,48 @@ function renderCompany(d) {
   }
 
   if (d.spending) renderSpending(result.querySelector('#spending'), d.spending);
+
+  result.classList.toggle('show-details', showDetails);
+  result.querySelector('.details-toggle').addEventListener('click', (e) => {
+    showDetails = !showDetails;
+    e.currentTarget.setAttribute('aria-pressed', showDetails);
+    result.classList.toggle('show-details', showDetails);
+    try {
+      localStorage.setItem('showDetails', showDetails ? '1' : '');
+    } catch {}
+  });
+}
+
+// Filing labels, agency lists and method notes are hidden until the reader asks for them.
+let showDetails = false;
+try {
+  showDetails = localStorage.getItem('showDetails') === '1';
+} catch {}
+
+/** The story in four numbers, each per $100 of revenue. */
+function renderGlance(d) {
+  const tiles = [];
+  const gov = governmentShare(d);
+  if (gov) {
+    tiles.push(`<a class="glance-tile gov-tile" href="#government">
+      <span class="big">${cents(gov.per100)}</span>
+      <span class="glance-label">came from the government</span>
+      <span class="glance-note">${money(gov.value)}, ${gov.note}</span></a>`);
+  }
+  const s = d.spending;
+  if (s) {
+    const costs = s.rows.filter((r) => r.kind === 'cost' || (r.kind === 'other' && r.per100 > 0)).reduce((t, r) => t + r.per100, 0);
+    const tax = s.rows.find((r) => r.kind === 'tax');
+    const profit = s.rows.find((r) => r.kind === 'profit');
+    const at21 = d.government?.taxBreaks?.pretaxIncome > 0 ? (d.government.taxBreaks.statutoryTax / d.totalRevenue) * 100 : null;
+    tiles.push(`<div class="glance-tile"><span class="big">${per100(costs)}</span><span class="glance-label">went to running the business</span></div>`);
+    tiles.push(`<a class="glance-tile" href="#government"><span class="big">${per100(tax.per100)}</span>
+      <span class="glance-label">${tax.per100 < 0 ? 'net tax benefit' : 'went to income taxes'}</span>
+      ${at21 != null ? `<span class="glance-note">${per100(at21)} at the 21% rate</span>` : ''}</a>`);
+    tiles.push(`<div class="glance-tile"><span class="big">${per100(profit.per100)}</span>
+      <span class="glance-label">${profit.per100 >= 0 ? 'kept as profit' : 'lost'}</span></div>`);
+  }
+  return tiles.length ? `<div class="glance">${tiles.join('')}</div>` : '';
 }
 
 const NEUTRAL = 'var(--neutral-fill)';
@@ -217,83 +262,55 @@ function renderSpending(el, s) {
     if (r.kind === 'other' && r.value < 0) sub = 'Interest, investment gains and other money not from customers';
     if (r.kind === 'profit' && r.value < 0) sub = 'Spent more than it brought in, covered by savings or borrowing';
     if (r.kind === 'tax' && r.value < 0) sub = 'A net tax benefit this year (credits or refunds), not a payment';
-    return { ...r, color, hatch: r.residual, sub, badge: BADGES[r.tag] };
+    return { ...r, color, hatch: r.residual, sub, fine: !!sub?.startsWith('In the filing:'), badge: BADGES[r.tag] };
   });
   renderBreakdown(el, items);
 }
 
+/** What happened to the profit, as a short list under "Where it goes". */
 function renderAfterProfit(s) {
   const profit = s.rows.find((r) => r.kind === 'profit');
   const { dividends, buybacks, investment } = s.afterProfit;
   const rows = [
-    ['Paid to shareholders', 'Dividends: cash paid to people who own the stock', dividends],
-    ['Bought back its own stock', 'Fewer shares makes each remaining share worth more', buybacks],
+    ['Paid to shareholders', 'Dividends', dividends],
+    ['Bought back its own stock', 'Makes each remaining share worth more', buybacks],
     ['Invested in buildings & equipment', 'Data centers, stores, factories, machines', investment],
-  ];
-  const max = Math.max(Math.abs(profit.per100), ...rows.map(([, , f]) => (f ? f.per100 : 0)), 1);
-  const bar = (v, color) =>
-    `<span class="mini"><span style="width:${(Math.max(v, 0) / max) * 100}%;background-color:${color}"></span></span>`;
+  ].filter(([, , f]) => f);
+  if (!rows.length) return '';
+  const max = Math.max(Math.abs(profit.per100), ...rows.map(([, , f]) => f.per100), 1);
+  const bar = (v) =>
+    `<span class="mini"><span style="width:${(Math.max(v, 0) / max) * 100}%;background-color:var(--ink-2)"></span></span>`;
   return `
-    <div class="card">
-      <h3 class="first">What it did with the money</h3>
-      <p class="hint">Also per $100 of revenue, from the cash flow statement. These can add up to more than the profit:
-        companies can also spend savings or borrow.</p>
-      <ul class="rows compact">
-        <li>
-          <span class="label">${profit.value >= 0 ? 'Profit kept this year' : 'Loss this year'}<span class="sub">From above, for comparison</span></span>
-          ${bar(profit.per100, 'var(--s3)')}
-          <span class="amt"><span class="per">${per100(profit.per100)}</span><span class="abs">${money(profit.value)}</span></span>
-        </li>
-        ${rows
-          .map(
-            ([label, sub, f]) => `
-        <li>
-          <span class="label">${label}<span class="sub">${sub}</span></span>
-          ${bar(f ? f.per100 : 0, 'var(--ink-2)')}
-          <span class="amt"><span class="per">${f ? per100(f.per100) : '—'}</span><span class="abs">${f ? money(f.value) : 'None reported'}</span></span>
-        </li>`,
-          )
-          .join('')}
-      </ul>
-    </div>`;
+    <h4>What it did with the money</h4>
+    <p class="hint">From the cash flow statement. This can add up to more than the ${per100(profit.per100)} profit:
+      companies also spend savings or borrow.</p>
+    <ul class="rows compact">
+      ${rows
+        .map(
+          ([label, sub, f]) => `
+      <li>
+        <span class="label">${label}<span class="sub fine">${sub}</span></span>
+        ${bar(f.per100)}
+        <span class="amt"><span class="per">${per100(f.per100)}</span><span class="abs">${money(f.value)}</span></span>
+      </li>`,
+        )
+        .join('')}
+    </ul>`;
 }
 
-function renderSpotlight(s) {
-  const t = s.taxes;
-  const tax = s.rows.find((r) => r.kind === 'tax');
-  const taxTile =
-    t.rate != null && t.rate < 0
-      ? `<p class="big">${t.rate}%</p>
-         <p class="tile-lede">It got a net tax <em>benefit</em> this year (credits or refunds) instead of owing income tax on its
-           profit. The US federal rate is 21%.</p>`
-      : t.rate != null
-      ? `<p class="big">${t.rate}%</p>
-         <p class="tile-lede">of its pre-tax profit went to income taxes. The US federal rate is 21%.</p>`
-      : `<p class="big">${per100(tax.per100)}</p><p class="tile-lede">per $100 went to income taxes.</p>`;
-  const cash = t.cashPaid
-    ? `<p class="tile-note">Cash actually paid in taxes this year: <strong>${per100(t.cashPaid.per100)}</strong> per $100
-        (${money(t.cashPaid.value)}). This often differs from the tax on paper, because some taxes are paid in other years.</p>`
-    : '';
-
+function renderEmployees(s) {
   const e = s.employees;
-  let payTile;
+  let body;
   if (e.payLine) {
-    payTile = `<p class="big">${per100(e.payLine.per100)}</p>
-      <p class="tile-lede">of every $100 went to employee pay and benefits.</p>`;
+    body = `<p><strong>${per100(e.payLine.per100)}</strong> of every $100 went to employee pay and benefits.</p>`;
   } else if (e.stockPay) {
-    payTile = `<p class="big">${per100(e.stockPay.per100)}</p>
-      <p class="tile-lede">of every $100 was paid to employees in company stock (${money(e.stockPay.value)}).</p>
-      <p class="tile-note">US companies don't have to report how much they pay in total wages, so the rest of employee pay is
-        mixed into the costs above.</p>`;
+    body = `<p><strong>${per100(e.stockPay.per100)}</strong> of every $100 was paid to employees in company stock
+      (${money(e.stockPay.value)}).</p>
+      <p class="tile-note">US companies don't have to report total wages, so the rest of employee pay is mixed into the costs above.</p>`;
   } else {
-    payTile = `<p class="big">—</p><p class="tile-lede">This filing doesn't report employee pay.</p>`;
+    return '';
   }
-
-  return `
-    <div class="tiles">
-      <div class="card tile"><h3 class="first">Taxes</h3>${taxTile}${cash}</div>
-      <div class="card tile"><h3 class="first">Employees</h3>${payTile}</div>
-    </div>`;
+  return `<div class="card employees"><h3 class="first">Employees</h3>${body}</div>`;
 }
 
 /**
@@ -311,7 +328,7 @@ function renderBreakdown(el, items) {
     <li data-i="${items.indexOf(it)}">
       <span class="swatch${it.hatch ? ' hatch' : ''}" style="background-color:${it.color}"></span>
       <span class="label">${esc(it.label)}${it.badge ? ` <span class="badge">${esc(it.badge)}</span>` : ''}${
-        it.sub ? `<span class="sub">${esc(it.sub)}</span>` : ''
+        it.sub ? `<span class="sub${it.fine ? ' fine' : ''}">${esc(it.sub)}</span>` : ''
       }</span>
       <span class="amt"><span class="per">${sign}${per100(Math.abs(it.per100))}</span><span class="abs">${money(Math.abs(it.value))}</span></span>
     </li>`;
