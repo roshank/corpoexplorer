@@ -2,6 +2,7 @@ import { displayName, longDate, money, per100, searchTickers, shortName } from '
 import { cents, governmentShare, renderGovernment } from './government.js';
 import { explainRow } from './explain.js';
 import { whoGets } from './whogets.js';
+import { ICONS } from './icons.js';
 
 const POPULAR = [
   ['AAPL', 'Apple'],
@@ -327,7 +328,7 @@ function renderWhoGets(d, short) {
           .map(
             (b) => `
         <li>
-          <span class="swatch" style="background-color:var(${b.color})"></span>
+          <span class="who-icon" style="--c:var(${b.color})">${ICONS[b.key]}</span>
           <span class="label">${b.label}<span class="sub">${b.sub}</span></span>
           <span class="amt"><span class="per">${shown(b)}</span></span>
         </li>`,
