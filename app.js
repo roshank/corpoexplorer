@@ -96,8 +96,11 @@ chips.addEventListener('click', (e) => {
 
 let requestId = 0;
 
+let shownTicker = null;
+
 function go(ticker, push = true) {
   ticker = ticker.toUpperCase();
+  shownTicker = ticker;
   input.value = ticker;
   closeSuggestions();
   if (push) history.pushState({ ticker }, '', `?t=${encodeURIComponent(ticker)}`);
@@ -442,10 +445,25 @@ function rowDetails(r, d, short) {
 
 /* ---------- URL state ---------- */
 
+// Links to another section ("See why ↓") scroll there instead of changing the URL.
+result.addEventListener('click', (e) => {
+  const link = e.target.closest('a[href^="#"]');
+  const target = link && document.getElementById(link.getAttribute('href').slice(1));
+  if (!target) return;
+  e.preventDefault();
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  target.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+  target.setAttribute('tabindex', '-1');
+  target.focus({ preventScroll: true });
+});
+
 window.addEventListener('popstate', () => {
   const t = new URLSearchParams(location.search).get('t');
+  // Only a different company needs loading; a change to just the #fragment doesn't.
+  if (t && t.toUpperCase() === shownTicker) return;
   if (t) go(t, false);
   else {
+    shownTicker = null;
     result.hidden = true;
     document.body.classList.remove('has-company');
     input.value = '';
