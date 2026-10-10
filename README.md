@@ -46,12 +46,17 @@ Requires Node 20+. There are no dependencies to install.
 1. **Costs.** We find the income statement in the filing's presentation linkbase (`*_pre.xml`, or the `.xsd`) and take the company's own cost lines between revenue and operating income (pre-tax income for banks). We use the most detailed set that adds up within 0.5%, so Amazon's "Fulfillment" and JPMorgan's "Compensation" show up as their own rows. Common lines get plain-English names, and the filing's wording is shown alongside.
 2. **Below the line.** Interest, investment gains and other items are whatever remains between operating income and taxes plus profit. When that's money *in* (e.g. Alphabet's investment gains), it's listed separately and the bar runs past $100.
 3. **Taxes and profit.** Income tax expense and net income, so every row adds back to revenue.
-4. **What it did with the money.** Dividends and buybacks (shown in the Left over block) and capital spending, from the cash flow statement.
-5. **Employees.** The pay line when the filing has one (banks usually do). Otherwise stock-based pay, with a note that US companies don't have to report total wages.
+4. **What it did with the money.** Dividends and buybacks, from the cash flow statement.
 
 ### The page
 
-- **The $100 in three blocks** at the top: cost of running the business, taxes, and what was left over (split into dividends, buybacks and what it kept). They add up to exactly $100: costs are whatever isn't tax or profit, net of income from outside the main business. A line under them shows how much came from the government.
+- **Who gets the $100** (top of the page): the revenue split by who ends up with it, adding up to exactly $100 (`whogets.js`):
+  - **Other businesses:** all costs except employee pay: suppliers, materials, rent, advertising, interest.
+  - **Workers:** the pay line when the filing reports one (banks usually do). Otherwise an estimate, labeled "at least": employees (from the 10-K text) × the median employee's pay (from the CEO pay-ratio disclosure in the proxy statement, DEF 14A), which counts stock at its value when granted. It understates the total because the average is above the median; for banks that report their actual pay bill, the estimate comes to 40–75% of it. An estimate above 90% of costs is treated as wrong and left out.
+  - **Governments:** income taxes, split between the US (federal, state and local) and abroad when the filing breaks it down, compared with the 21% federal rate.
+  - **Owners:** dividends and buybacks.
+  - **Kept by the company:** profit left after dividends and buybacks. Negative when a company paid out more than it earned.
+  A line underneath shows how much of the $100 came from the government.
 - **Show details:** filing labels, agency lists and method notes are hidden until the reader turns them on (remembered in the browser).
 - Rows under 1¢ per $100 in the Government money & taxes card are combined into one row.
 - **Click a row in "Where it goes"** to see what it means: a plain-English explanation (`explain.js`) and, when the filing has one, the company's own description of that line from its 10-K. The build pulls these from the filing text (`lib/describe.js`): the sentence that starts with the line's name and defines it ("Our cost of revenue consists of…"), up to the end of its paragraph. About a third of cost lines have one.
@@ -69,6 +74,7 @@ How the US government puts money into the company, in three parts:
 index.html, app.js, format.js, styles.css   The site
 government.js      The "Government money & taxes" card
 explain.js         Plain-English explanations for the "Where it goes" rows
+whogets.js         The five-way split of the $100
 data/              Pre-built company data the site reads
 scripts/build-data.js   Builds data/ from SEC filings
 lib/sec.js         EDGAR fetching (throttled, with retries)
@@ -78,9 +84,12 @@ lib/spending.js    Costs, taxes, profit and what happened to the profit
 lib/government.js  Government revenue and tax breaks from the 10-K
 lib/usaspending.js Federal contracts and awards from USAspending.gov
 lib/describe.js    The company's own description of each cost line, from the 10-K text
+lib/workforce.js   Headcount (10-K text) and median employee pay (proxy statement)
 ```
 
 ## Known limits
+
+- Worker pay is an estimate for most companies and is on the low side. Headcount and median pay are read from filing text, so a company that phrases them unusually may be missing them (Chevron's headcount, Lilly's and Bank of America's median pay today); its pay then stays inside Other businesses.
 
 - Only the 50 largest companies are included, and the data is refreshed weekly.
 - Only US filers that file a 10-K. Foreign companies that file 20-F (e.g. TSMC, Toyota) aren't supported yet.
