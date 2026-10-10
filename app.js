@@ -1,5 +1,5 @@
 import { displayName, longDate, money, per100, searchTickers, shortName } from './format.js';
-import { renderGovernment } from './government.js';
+import { renderGovernment, renderGovernmentHeadline } from './government.js';
 
 const POPULAR = [
   ['AAPL', 'Apple'],
@@ -157,6 +157,7 @@ function renderCompany(d) {
              <div id="income"></div>`
           : `<p class="status">${esc(short)}'s filing doesn't break its revenue down in a way we can read yet.</p>`
       }
+      ${renderGovernmentHeadline(d)}
     </div>
 
     <div class="card">

@@ -16,12 +16,40 @@ const row = (label, sub, fraction, color, per, abs) => `
     <span class="amt"><span class="per">${per}</span>${abs ? `<span class="abs">${abs}</span>` : ''}</span>
   </li>`;
 
+/**
+ * One headline under the revenue breakdown: how much of every $100 came from the government.
+ * Uses the 10-K's own figure when it has one, otherwise federal money committed in USAspending.
+ */
+export function renderGovernmentHeadline(d) {
+  const customer = d.government?.customer;
+  const federal = (d.federal?.groups ?? []).reduce((s, g) => s + Math.max(g.total, 0), 0);
+  let value;
+  let source;
+  if (customer) {
+    value = customer.value;
+    source = `${money(value)}, “${esc(customer.label)}” in the 10-K`;
+  } else if (d.federal) {
+    value = federal;
+    source = `${money(value)} in federal contracts &amp; awards (USAspending.gov)`;
+  } else {
+    return '';
+  }
+  return `
+    <a class="gov-headline" href="#government">
+      <span class="big">${cents(share(value, d.totalRevenue))}</span>
+      <span class="gov-headline-text">
+        <strong>of every $100 came from the government</strong>, which means from taxpayers.
+        <span class="tile-note">${source}. See where it goes ↓</span>
+      </span>
+    </a>`;
+}
+
 /** The card's markup. Everything is also shown per $100 of revenue, like the rest of the page. */
 export function renderGovernment(d, short) {
   const g = d.government;
   if (!g) return '';
   return `
-    <div class="card gov">
+    <div class="card gov" id="government">
       <h3 class="first">Government money</h3>
       <p class="hint">How the US government puts money into ${esc(short)}: by buying from it, through federal awards,
         and through tax breaks that lower its tax bill. Per $100 of revenue, so it compares with the rest of the page.</p>
