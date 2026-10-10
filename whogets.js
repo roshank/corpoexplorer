@@ -26,7 +26,7 @@ export function whoGets(d) {
     workers = { per100: s.employees.payLine.per100, value: s.employees.payLine.value, source: 'reported' };
   } else if (w?.employees && w?.medianPay) {
     const value = w.employees * w.medianPay;
-    workers = { per100: cents((value / d.totalRevenue) * 100), value, source: 'estimate', employees: w.employees, medianPay: w.medianPay };
+    workers = { per100: cents((value / d.totalRevenue) * 100), value, source: 'estimate', employees: w.employees, medianPay: w.medianPay, payYear: w.payYear };
   }
   if (workers && (workers.per100 <= 0 || workers.per100 > costs * 0.9)) workers = null;
 
