@@ -560,41 +560,96 @@ h3.first {
   font-size: 12px;
 }
 
-/* At a glance */
-.glance {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 10px;
+/* The top-level cut of the $100 */
+.topline {
   margin-top: 20px;
 }
-.glance-tile {
+.topline-bar {
   display: flex;
-  flex-direction: column;
+  gap: 2px;
+  height: 18px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.topline-bar span {
+  height: 100%;
+  flex-basis: 0;
+}
+.blocks {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 12px;
+}
+.block {
   padding: 14px 16px;
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--page);
-  color: inherit;
-  text-decoration: none;
 }
-a.glance-tile:hover {
-  border-color: var(--ink-2);
-}
-.glance-tile .big {
-  font-size: 28px;
+.block p {
   margin: 0;
 }
-.glance-label {
+.block-head {
   color: var(--ink-2);
   font-size: 14px;
+  font-weight: 600;
 }
-.glance-note {
+.dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  margin-right: 6px;
+}
+.block .big {
+  font-size: 30px;
+  margin: 4px 0 6px;
+}
+.block-note {
   color: var(--muted);
-  font-size: 12px;
-  margin-top: 4px;
+  font-size: 13px;
+  margin-top: 6px !important;
 }
-.gov-tile {
+.split {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.split li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 3px 0;
+  border-top: 1px solid var(--hairline);
+  font-variant-numeric: tabular-nums;
+}
+.split li.over {
+  color: var(--muted);
+}
+.gov-line {
+  display: block;
+  margin-top: 12px;
+  padding: 10px 14px;
   border-left: 4px solid var(--s7);
+  border-radius: 0 8px 8px 0;
+  background: var(--page);
+  color: var(--ink-2);
+  font-size: 14px;
+  text-decoration: none;
+}
+.gov-line strong {
+  color: var(--ink);
+}
+.gov-line:hover {
+  color: var(--ink);
+}
+@media (max-width: 620px) {
+  .blocks {
+    grid-template-columns: 1fr;
+  }
 }
 
 .tax-rate {

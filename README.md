@@ -46,12 +46,12 @@ Requires Node 20+. There are no dependencies to install.
 1. **Costs.** We find the income statement in the filing's presentation linkbase (`*_pre.xml`, or the `.xsd`) and take the company's own cost lines between revenue and operating income (pre-tax income for banks). We use the most detailed set that adds up within 0.5%, so Amazon's "Fulfillment" and JPMorgan's "Compensation" show up as their own rows. Common lines get plain-English names, and the filing's wording is shown alongside.
 2. **Below the line.** Interest, investment gains and other items are whatever remains between operating income and taxes plus profit. When that's money *in* (e.g. Alphabet's investment gains), it's listed separately and the bar runs past $100.
 3. **Taxes and profit.** Income tax expense and net income, so every row adds back to revenue.
-4. **What it did with the money.** Dividends, buybacks and capital spending, from the cash flow statement.
+4. **What it did with the money.** Dividends and buybacks (shown in the Left over block) and capital spending, from the cash flow statement.
 5. **Employees.** The pay line when the filing has one (banks usually do). Otherwise stock-based pay, with a note that US companies don't have to report total wages.
 
 ### The page
 
-- **At a glance:** four numbers per $100 at the top: from the government, costs, income taxes (vs. the 21% rate) and profit.
+- **The $100 in three blocks** at the top: cost of running the business, taxes, and what was left over (split into dividends, buybacks and what it kept). They add up to exactly $100: costs are whatever isn't tax or profit, net of income from outside the main business. A line under them shows how much came from the government.
 - **Show details:** filing labels, agency lists and method notes are hidden until the reader turns them on (remembered in the browser).
 - Rows under 1¢ per $100 in the Government money & taxes card are combined into one row.
 - **Click a row in "Where it goes"** to see what it means: a plain-English explanation (`explain.js`) and, when the filing has one, the company's own description of that line from its 10-K. The build pulls these from the filing text (`lib/describe.js`): the sentence that starts with the line's name and defines it ("Our cost of revenue consists of…"), up to the end of its paragraph. About a third of cost lines have one.
