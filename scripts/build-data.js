@@ -14,6 +14,8 @@ import { getFederalAwards } from '../lib/usaspending.js';
 // Bump when the shape or the logic of the per-company data changes, to force a rebuild.
 const DATA_VERSION = 9;
 const MAX_ATTEMPTS_FACTOR = 2; // look at up to target*2 companies to find `target` usable ones
+// Companies covered on top of the largest `target`, whatever their size.
+const ALWAYS_INCLUDE = ['IBM'];
 
 const DATA = fileURLToPath(new URL('../data/', import.meta.url));
 const COMPANIES = DATA + 'c/';
@@ -40,14 +42,17 @@ for (const t of await getTickers()) {
   groups.get(t.cik).tickers.push(t.ticker);
 }
 let queue = [...groups.values()];
+const isExtra = (g) => g.tickers.some((t) => ALWAYS_INCLUDE.includes(t));
 if (only) queue = queue.filter((g) => g.tickers.some((t) => only.includes(t)));
+else queue = [...new Set([...queue.slice(0, target * MAX_ATTEMPTS_FACTOR), ...queue.filter(isExtra)])];
 
 const built = [];
 const stats = { fresh: 0, reused: 0, skipped: 0, failed: 0 };
 const started = Date.now();
 
-for (const co of queue.slice(0, only ? queue.length : target * MAX_ATTEMPTS_FACTOR)) {
-  if (built.length >= target && !only) break;
+let largest = 0; // companies built from the size-ordered list, not counting ALWAYS_INCLUDE
+for (const co of queue) {
+  if (largest >= target && !only && !isExtra(co)) continue;
   const file = `${COMPANIES}${co.cik}.json`;
   const tag = `${co.ticker.padEnd(6)} ${co.name}`;
   try {
@@ -75,10 +80,14 @@ for (const co of queue.slice(0, only ? queue.length : target * MAX_ATTEMPTS_FACT
     }
     if (JSON.stringify(data) !== JSON.stringify(old)) await writeFile(file, JSON.stringify(data));
     built.push({ co, name: data.name });
+    if (!isExtra(co)) largest++;
   } catch (err) {
     // Keep what we had if this was a hiccup; drop it if we never had it.
     const old = await readJson(file);
-    if (old) built.push({ co, name: old.name });
+    if (old) {
+      built.push({ co, name: old.name });
+      if (!isExtra(co)) largest++;
+    }
     stats.failed++;
     console.log(`  fail  ${tag}: ${err.message}`);
   }

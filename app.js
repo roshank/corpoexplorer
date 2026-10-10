@@ -29,11 +29,15 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
 
 // [ticker, name, cik] for every company we have data for, built ahead of time from SEC filings.
 let tickers = [];
+let companyCount = 51;
 const ready = fetch('data/companies.json')
   .then((r) => (r.ok ? r.json() : { companies: [] }))
   .then((d) => {
     tickers = d.companies;
     if (d.updated) $('#updated').textContent = `, updated ${longDate(d.updated)}`;
+    // Share classes (GOOGL/GOOG) are separate rows for the same company.
+    companyCount = new Set(d.companies.map((c) => c[2])).size;
+    $('#company-count').textContent = companyCount;
     return d.companies.length;
   })
   .catch(() => 0);
@@ -125,7 +129,7 @@ async function load(ticker) {
     if (!entry) {
       throw new Error(
         count
-          ? `We don't have ${ticker} yet. For now we cover the 50 largest US companies that file a 10-K annual report.`
+          ? `We don't have ${ticker} yet. For now we cover ${companyCount} of the largest US companies that file a 10-K annual report.`
           : "Couldn't load the company list. Try reloading the page.",
       );
     }

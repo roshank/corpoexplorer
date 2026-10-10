@@ -29,3 +29,10 @@ test('findMedianPay reports the year the pay is for', () => {
   );
   assert.deepEqual(findMedianPay('The median annual total compensation of all employees was $89,253.'), { pay: 89253, year: null });
 });
+
+test('findMedianPay skips base salary in favor of total pay', () => {
+  assert.equal(
+    findMedianPay('ratio is based on $37,989,685 for the CEO and $49,630 for the median employee. The base salary for the median employee was $48,001.').pay,
+    49630,
+  );
+});
