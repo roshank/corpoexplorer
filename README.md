@@ -47,9 +47,14 @@ Requires Node 20+. There are no dependencies to install.
 2. **Below the line.** Interest, investment gains and other items are whatever remains between operating income and taxes plus profit. When that's money *in* (e.g. Alphabet's investment gains), it's listed separately and the bar runs past $100.
 3. **Taxes and profit.** Income tax expense and net income, so every row adds back to revenue.
 4. **What it did with the money.** Dividends, buybacks and capital spending, from the cash flow statement.
-5. **Spotlights.**
-   - **Taxes:** the effective tax rate (compared with the 21% federal rate) and cash taxes actually paid.
-   - **Employees:** the pay line when the filing has one (banks usually do). Otherwise stock-based pay, with a note that US companies don't have to report total wages.
+5. **Employees.** The pay line when the filing has one (banks usually do). Otherwise stock-based pay, with a note that US companies don't have to report total wages.
+
+### The page
+
+- **At a glance:** four numbers per $100 at the top: from the government, costs, income taxes (vs. the 21% rate) and profit.
+- **Show details:** filing labels, agency lists and method notes are hidden until the reader turns them on (remembered in the browser).
+- Rows under 1¢ per $100 in the Government money & taxes card are combined into one row.
+- The effective tax rate and cash taxes paid are shown in the Government money & taxes card.
 
 ### Government money
 
