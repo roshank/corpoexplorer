@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { extractHeadcount, extractMedianPay } from '../lib/workforce.js';
+import { extractHeadcount, extractMedianPay, findMedianPay } from '../lib/workforce.js';
 
 test('extractHeadcount finds the total, not subsets or other years', () => {
   assert.equal(extractHeadcount('As of December 31, 2025, we employed approximately 1,576,000 full-time and part-time employees.'), 1576000);
@@ -20,4 +20,12 @@ test('extractMedianPay reads the pay-ratio disclosure', () => {
   assert.equal(extractMedianPay('The median annual total compensation of all Caterpillar employees, other than Mr. Creed, was $89,253.'), 89253);
   assert.equal(extractMedianPay('was $ 52,838,751 for our CEO, as reported, and $177,115 for our median employee, and the ratio is 298 to 1.'), 177115);
   assert.equal(extractMedianPay('Our CEO was paid $25,000,000.'), null);
+});
+
+test('findMedianPay reports the year the pay is for', () => {
+  assert.deepEqual(
+    findMedianPay('the median 2025 annual total compensation of all other qualifying employees was $62,786.'),
+    { pay: 62786, year: 2025 },
+  );
+  assert.deepEqual(findMedianPay('The median annual total compensation of all employees was $89,253.'), { pay: 89253, year: null });
 });

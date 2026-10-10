@@ -251,7 +251,9 @@ function renderWhoGets(d, short) {
       value: workers.per100,
       sub:
         workers.source === 'estimate'
-          ? `About ${Math.round(workers.employees).toLocaleString('en-US')} employees × ${money(workers.medianPay)} median pay,
+          ? `About ${Math.round(workers.employees).toLocaleString('en-US')} employees × ${money(workers.medianPay)} median pay${
+              workers.payYear ? ` (${workers.payYear})` : ''
+            },
              including stock at its value when granted. The real total is likely higher, since the average is above the median.`
           : 'Pay and benefits, as reported in the filing.',
     },
