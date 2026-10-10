@@ -10,7 +10,7 @@ SEC's filing archive doesn't allow browsers on other sites to load it (no CORS h
 
 - `data/companies.json` lists every ticker we cover.
 - `data/c/<CIK>.json` holds one company's numbers (~3KB each).
-- For now we cover the 50 largest companies by market cap that file a US 10-K, taken in SEC's ticker-list order, which is roughly by market cap. Change `--target` in the workflow to cover more.
+- For now we cover the 50 largest companies by market cap that file a US 10-K, taken in SEC's ticker-list order, which is roughly by market cap, plus the companies in `ALWAYS_INCLUDE` in `scripts/build-data.js` (IBM). Change `--target` in the workflow to cover more.
 
 ### Keeping it fresh
 
@@ -91,7 +91,7 @@ lib/workforce.js   Headcount (10-K text) and median employee pay (proxy statemen
 
 - Worker pay is an estimate for most companies and is on the low side. Headcount and median pay are read from filing text, so a company that phrases them unusually may be missing them (Chevron's headcount, Lilly's and Bank of America's median pay today); its pay then stays inside Other businesses.
 
-- Only the 50 largest companies are included, and the data is refreshed weekly.
+- Only the 50 largest companies (plus IBM) are included, and the data is refreshed weekly.
 - Only US filers that file a 10-K. Foreign companies that file 20-F (e.g. TSMC, Toyota) aren't supported yet.
 - Banks and insurers report revenue differently, so their breakdowns are thinner.
 - Some companies don't tag their revenue tables in a way we can reconcile, so some views may be missing for them.
