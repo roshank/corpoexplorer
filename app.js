@@ -316,6 +316,15 @@ function renderWhoGets(d, short) {
     },
   ].filter(Boolean);
 
+  // Grouped by who ends up with it: people, the wider economy, and the owners' side.
+  const GROUPS = [
+    { title: 'To people', keys: ['workers'] },
+    { title: 'Into the economy', keys: ['other', 'governments'] },
+    { title: 'To owners & the company', keys: ['owners', 'kept'] },
+  ];
+  const groups = GROUPS.map((g) => ({ ...g, blocks: g.keys.map((k) => blocks.find((b) => b.key === k)).filter(Boolean) }));
+  blocks.splice(0, blocks.length, ...groups.flatMap((g) => g.blocks));
+
   const positive = blocks.filter((b) => b.value > 0);
   const shown = (b) => (b.value == null ? '<span class="not-reported">Not reported</span>' : amount(b.value));
   return `
@@ -323,18 +332,28 @@ function renderWhoGets(d, short) {
       <div class="topline-bar" role="img" aria-label="${esc(blocks.filter((b) => b.value != null).map((b) => `${b.label} ${per100(b.value)}`).join(', '))}">
         ${positive.map((b) => `<span style="flex-grow:${b.value};background-color:var(${b.color})"></span>`).join('')}
       </div>
-      <ul class="rows who-rows">
-        ${blocks
-          .map(
-            (b) => `
-        <li>
-          <span class="who-icon" style="--c:var(${b.color})">${ICONS[b.key]}</span>
-          <span class="label">${b.label}<span class="sub">${b.sub}</span></span>
-          <span class="amt"><span class="per">${shown(b)}</span></span>
-        </li>`,
-          )
-          .join('')}
-      </ul>
+      ${groups
+        .map((g) => {
+          const known = g.blocks.filter((b) => b.value != null);
+          const total = g.blocks.length > 1 && known.length ? amount(known.reduce((sum, b) => sum + b.value, 0)) : '';
+          return `
+      <div class="who-group">
+        <h3 class="who-group-head"><span>${g.title}</span><span class="who-group-total">${total}</span></h3>
+        <ul class="rows who-rows">
+          ${g.blocks
+            .map(
+              (b) => `
+          <li>
+            <span class="who-icon" style="--c:var(${b.color})">${ICONS[b.key]}</span>
+            <span class="label">${b.label}<span class="sub">${b.sub}</span></span>
+            <span class="amt"><span class="per">${shown(b)}</span></span>
+          </li>`,
+            )
+            .join('')}
+        </ul>
+      </div>`;
+        })
+        .join('')}
       ${publicLine}
     </div>`;
 }
