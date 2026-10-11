@@ -295,7 +295,7 @@ function renderWhoGets(d, short) {
     {
       key: 'owners',
       color: '--s5',
-      label: 'Owners',
+      label: 'Paid out to owners',
       value: owners.per100,
       sub:
         owners.per100 > 0
@@ -312,15 +312,19 @@ function renderWhoGets(d, short) {
           ? 'It lost money this year: costs and taxes were more than it brought in.'
           : kept.per100 < 0
             ? `Paid out more to owners than it earned (${per100(kept.profit)} profit), from savings or borrowing.`
-            : 'Profit left after paying owners: reinvested, used to pay down debt, or saved.',
+            : 'Held on the owners\u2019 behalf: reinvested, used to pay down debt, or saved.',
     },
   ].filter(Boolean);
 
   // Grouped by who ends up with it: people, the wider economy, and the owners' side.
   const GROUPS = [
-    { title: 'To people', keys: ['workers'] },
-    { title: 'Into the economy', keys: ['other', 'governments'] },
-    { title: 'To owners & the company', keys: ['owners', 'kept'] },
+    { title: 'Paid to workers', note: 'Wages, benefits and stock pay for employees.', keys: ['workers'] },
+    {
+      title: 'Spent in the wider economy',
+      note: 'Paid to suppliers, landlords and lenders, and taxes to governments.',
+      keys: ['other', 'governments'],
+    },
+    { title: 'Owners\u2019 profit', note: 'What\u2019s left after everyone else is paid. It belongs to the owners.', keys: ['owners', 'kept'] },
   ];
   const groups = GROUPS.map((g) => ({ ...g, blocks: g.keys.map((k) => blocks.find((b) => b.key === k)).filter(Boolean) }));
   blocks.splice(0, blocks.length, ...groups.flatMap((g) => g.blocks));
@@ -339,6 +343,7 @@ function renderWhoGets(d, short) {
           return `
       <div class="who-group">
         <h3 class="who-group-head"><span>${g.title}</span><span class="who-group-total">${total}</span></h3>
+        <p class="who-group-note">${g.note}</p>
         <ul class="rows who-rows">
           ${g.blocks
             .map(
