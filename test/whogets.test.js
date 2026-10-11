@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ceoShareOfWorkerPay, whoGets, workersToOwners } from '../whogets.js';
+import { ceoShareOfWorkerPay, ownersToWorkers, whoGets } from '../whogets.js';
 
 const company = (over = {}) => ({
   totalRevenue: 1000,
@@ -72,11 +72,14 @@ test('ceoShareOfWorkerPay is CEO pay over all worker pay', () => {
   assert.equal(ceoShareOfWorkerPay({ workforce: {} }, { value: 1e9 }), null);
 });
 
-test('workersToOwners compares pay to workers with payouts to owners', () => {
+test('ownersToWorkers: how many times what workers got went to owners', () => {
   const w = (workers, owners, source = 'estimate') => ({ workers: workers == null ? null : { per100: workers, source }, owners: { per100: owners } });
-  assert.deepEqual(workersToOwners(w(8.99, 2.18)), { ratio: 8.99 / 2.18, estimate: true });
-  assert.deepEqual(workersToOwners(w(29.86, 26.43, 'reported')), { ratio: 29.86 / 26.43, estimate: false });
+  // Apple: $25.51 to owners, $5.56 to workers.
+  const apple = ownersToWorkers(w(5.56, 25.51));
+  assert.equal(Math.round(apple.ratio * 100) / 100, 4.59);
+  assert.equal(apple.estimate, true);
+  assert.equal(ownersToWorkers(w(29.86, 26.43, 'reported')).estimate, false);
   // Amazon: no dividends or buybacks.
-  assert.deepEqual(workersToOwners(w(8.84, 0)), { noPayouts: true, estimate: true });
-  assert.equal(workersToOwners(w(null, 5)), null);
+  assert.equal(ownersToWorkers(w(8.84, 0)).ratio, 0);
+  assert.equal(ownersToWorkers(w(null, 5)), null);
 });

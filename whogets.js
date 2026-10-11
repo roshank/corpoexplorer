@@ -76,12 +76,13 @@ export function ceoShareOfWorkerPay(d, workers) {
 }
 
 /**
- * Workers vs owners: pay to workers for every $1 paid out to owners (dividends + buybacks).
- * { ratio, estimate } or { noPayouts: true }; null when there's no workers figure.
+ * Workers vs owners: how many times what workers were paid went out to owners (dividends +
+ * buybacks). 4.6 means owners got 4.6x what workers did; 0.24 means workers got about 4x more.
  * Uses payouts rather than all profit: what's kept is reinvested, often in the business.
+ * { ratio, workers, owners, estimate } in $ per 100, or null when there's no workers figure.
  */
-export function workersToOwners(w) {
-  if (!w?.workers) return null;
-  if (!(w.owners.per100 > 0)) return { noPayouts: true, estimate: w.workers.source === 'estimate' };
-  return { ratio: w.workers.per100 / w.owners.per100, estimate: w.workers.source === 'estimate' };
+export function ownersToWorkers(w) {
+  if (!w?.workers || !(w.workers.per100 > 0)) return null;
+  const owners = Math.max(w.owners.per100, 0);
+  return { ratio: owners / w.workers.per100, workers: w.workers.per100, owners, estimate: w.workers.source === 'estimate' };
 }

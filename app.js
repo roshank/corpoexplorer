@@ -1,7 +1,7 @@
 import { displayName, longDate, money, per100, searchTickers, shortName } from './format.js';
 import { cents, governmentShare, renderGovernment } from './government.js';
 import { explainRow } from './explain.js';
-import { ceoShareOfWorkerPay, whoGets, workersToOwners } from './whogets.js';
+import { ceoShareOfWorkerPay, ownersToWorkers, whoGets } from './whogets.js';
 import { ICONS } from './icons.js';
 
 const POPULAR = [
@@ -31,7 +31,7 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
 // [ticker, name, cik] for every company we have data for, built ahead of time from SEC filings.
 let tickers = [];
 let companyCount = 500;
-// Typical figures per sector ({ [sector]: { workersToOwners } }), for context on each page.
+// Typical figures per sector ({ [sector]: { ownersToWorkers } }), for context on each page.
 let sectors = {};
 // The data's fingerprint (written into index.html by scripts/stamp.js), so a browser fetches
 // fresh data right after it changes instead of reusing a cached copy.
@@ -356,8 +356,8 @@ function renderWhoGets(d, short) {
   const groups = GROUPS.map((g) => ({ ...g, blocks: g.keys.map((k) => blocks.find((b) => b.key === k)).filter(Boolean) }));
   // The CEO is a worker too: how their pay compares with the typical employee's, and with all pay.
   groups.find((g) => g.keys.includes('workers')).extra = ceoPayRow(d, workers);
-  // Comparing the two groups above: pay to workers for every $1 paid out to owners.
-  groups.find((g) => g.keys.includes('owners')).extra = workersOwnersRow(d, w);
+  // Its own section after Owners' profit: who got more, workers or owners.
+  groups.find((g) => g.keys.includes('owners')).after = versusSection(d, w);
   blocks.splice(0, blocks.length, ...groups.flatMap((g) => g.blocks));
 
   const positive = blocks.filter((b) => b.value > 0);
@@ -389,7 +389,7 @@ function renderWhoGets(d, short) {
             .join('')}
           ${g.extra ?? ''}
         </ul>
-      </div>`;
+      </div>${g.after ?? ''}`;
         })
         .join('')}
       ${publicLine}
@@ -399,22 +399,39 @@ function renderWhoGets(d, short) {
 /** 0.22×, 4.1×, 36× */
 const times = (r) => (r < 1 ? r.toFixed(2) : r < 10 ? r.toFixed(1) : Math.round(r).toLocaleString('en-US'));
 
-/** Workers vs owners: pay to workers for every $1 paid out to owners, next to the sector's typical figure. */
-function workersOwnersRow(d, w) {
-  const r = workersToOwners(w);
+/**
+ * Workers vs owners, who gets more: what went to owners as a multiple of what went to workers
+ * (10x, 50x), with both amounts as bars and the sector's typical figure.
+ */
+function versusSection(d, w) {
+  const r = ownersToWorkers(w);
   if (!r) return '';
   const est = r.estimate ? ' (est.)' : '';
-  const typical = sectors[d.sector]?.workersToOwners;
-  const context = typical != null ? ` · Typical in ${esc(d.sector)}: ${times(typical)}×` : '';
-  const sub = r.noPayouts
-    ? `It paid nothing to owners this year (no dividends or buybacks)${context}`
-    : `For every $1 paid out to owners, ${per100(r.ratio)} went to workers${est}${context}`;
+  let says;
+  if (r.owners === 0) says = 'Owners got no payouts this year: no dividends or buybacks.';
+  else if (r.ratio >= 1.05) says = `Owners got ${times(r.ratio)} times what workers got.`;
+  else if (r.ratio > 1 / 1.05) says = 'Workers and owners got about the same.';
+  else says = `Workers got ${times(1 / r.ratio)} times what owners got.`;
+  const typical = sectors[d.sector]?.ownersToWorkers;
+  const context = typical != null ? ` Typical in ${esc(d.sector)}: ${times(typical)}×.` : '';
+  const max = Math.max(r.workers, r.owners, 0.01);
+  const bar = (label, color, v) => `
+        <div class="vs-row">
+          <span class="vs-label">${label}</span>
+          <span class="vs-track"><span style="width:${Math.max((v / max) * 100, v > 0 ? 1 : 0)}%;background-color:var(${color})"></span></span>
+          <span class="vs-amt">${per100(v)}</span>
+        </div>`;
   return `
-          <li class="who-stat">
-            <span class="who-icon" style="--c:var(--ink-2)">${ICONS.balance}</span>
-            <span class="label">Workers vs owners<span class="sub">${sub}</span></span>
-            <span class="amt"><span class="per">${r.noPayouts ? '—' : `${times(r.ratio)}×`}</span></span>
-          </li>`;
+    <section class="vs" aria-label="Workers vs owners">
+      <h3 class="vs-head">Workers vs owners <span>Who gets more?</span></h3>
+      <div class="vs-main">
+        <span class="vs-big">${r.owners === 0 ? 0 : times(r.ratio)}×</span>
+        <span class="vs-says">${says}</span>
+      </div>
+      ${bar(`Workers${est}`, '--s4', r.workers)}
+      ${bar('Owners', '--s5', r.owners)}
+      <p class="vs-note">Of every $100: pay to workers vs money paid out to owners as dividends and buybacks.${context}</p>
+    </section>`;
 }
 
 /** The CEO pay multiplier: CEO pay as a multiple of the median employee's, from the proxy. */

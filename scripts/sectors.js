@@ -1,11 +1,11 @@
 // Typical figures per sector, for context on each company's page: e.g. REITs must pay out most
-// of their income, so their workers-vs-owners ratio is low by law. Stored in data/companies.json.
+// of their income, so owners get far more than workers there by law. Stored in data/companies.json.
 //
 //   node scripts/sectors.js   (also run by the data build)
 
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { whoGets, workersToOwners } from '../whogets.js';
+import { ownersToWorkers, whoGets } from '../whogets.js';
 
 const DATA = fileURLToPath(new URL('../data/', import.meta.url));
 
@@ -14,7 +14,7 @@ const median = (xs) => {
   return s.length ? (s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2) : null;
 };
 
-/** { [sector]: { companies, workersToOwners } }, from the data in data/c. */
+/** { [sector]: { companies, ownersToWorkers } }, from the data in data/c. */
 export async function sectorStats(index) {
   const sectorOf = new Map(index.companies.map((r) => [r[2], r[3]]));
   const ratios = {};
@@ -24,13 +24,13 @@ export async function sectorStats(index) {
     const sector = sectorOf.get(d.cik);
     if (!sector) continue;
     counts[sector] = (counts[sector] ?? 0) + 1;
-    const r = workersToOwners(whoGets(d));
+    const r = ownersToWorkers(whoGets(d));
     if (r?.ratio != null) (ratios[sector] ??= []).push(r.ratio);
   }
   const out = {};
   for (const s of Object.keys(counts).sort()) {
     const m = median(ratios[s] ?? []);
-    out[s] = { companies: counts[s], workersToOwners: m == null ? null : Math.round(m * 100) / 100 };
+    out[s] = { companies: counts[s], ownersToWorkers: m == null ? null : Math.round(m * 100) / 100 };
   }
   return out;
 }
