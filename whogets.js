@@ -74,3 +74,14 @@ export function ceoShareOfWorkerPay(d, workers) {
   if (!ceo || !workers?.value || workers.value <= 0) return null;
   return (ceo / workers.value) * 100;
 }
+
+/**
+ * Workers vs owners: pay to workers for every $1 paid out to owners (dividends + buybacks).
+ * { ratio, estimate } or { noPayouts: true }; null when there's no workers figure.
+ * Uses payouts rather than all profit: what's kept is reinvested, often in the business.
+ */
+export function workersToOwners(w) {
+  if (!w?.workers) return null;
+  if (!(w.owners.per100 > 0)) return { noPayouts: true, estimate: w.workers.source === 'estimate' };
+  return { ratio: w.workers.per100 / w.owners.per100, estimate: w.workers.source === 'estimate' };
+}

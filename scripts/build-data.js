@@ -14,6 +14,7 @@ import { getFederalAwards } from '../lib/usaspending.js';
 import { fetchSp500 } from '../lib/sp500.js';
 import { stamp } from './stamp.js';
 import { coverage } from './coverage.js';
+import { writeSectorStats } from './sectors.js';
 
 // Bump when the shape or the logic of the per-company data changes, to force a rebuild.
 const DATA_VERSION = 14;
@@ -56,11 +57,13 @@ for (const t of await getTickers()) {
   if (!groups.has(t.cik)) groups.set(t.cik, { cik: t.cik, ticker: t.ticker, name: t.name, tickers: [] });
   groups.get(t.cik).tickers.push(t.ticker);
 }
-// Members missing from SEC's ticker list still get built, under the index's tickers.
-for (const c of sp500) {
+// Members missing from SEC's ticker list still get built, under the index's tickers. The index's
+// tickers come first: SEC's list can put a preferred share ("F-PD") ahead of the common stock.
+for (const c of [...sp500].reverse()) {
   if (!groups.has(c.cik)) groups.set(c.cik, { cik: c.cik, ticker: c.ticker, name: c.name, tickers: [] });
   const g = groups.get(c.cik);
-  if (!g.tickers.includes(c.ticker)) g.tickers.push(c.ticker);
+  g.tickers = [c.ticker, ...g.tickers.filter((t) => t !== c.ticker)];
+  g.ticker = g.tickers[0];
 }
 let queue = [...groups.values()];
 if (only) queue = queue.filter((g) => g.tickers.some((t) => only.includes(t)));
@@ -127,6 +130,9 @@ console.log(
   `\n${built.length} companies (${stats.fresh} built, ${stats.reused} unchanged, ${stats.skipped} without a 10-K, ${stats.failed} failed) in ${secs}s` +
     (prevByCik.size ? `; previously ${prevByCik.size}` : ''),
 );
+
+// Typical figures per sector, for context on each page.
+await writeSectorStats();
 
 // What each part of the page covers, and results that look wrong (data/coverage.md).
 await coverage();

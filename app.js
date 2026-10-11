@@ -1,7 +1,7 @@
 import { displayName, longDate, money, per100, searchTickers, shortName } from './format.js';
 import { cents, governmentShare, renderGovernment } from './government.js';
 import { explainRow } from './explain.js';
-import { ceoShareOfWorkerPay, whoGets } from './whogets.js';
+import { ceoShareOfWorkerPay, whoGets, workersToOwners } from './whogets.js';
 import { ICONS } from './icons.js';
 
 const POPULAR = [
@@ -31,6 +31,8 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
 // [ticker, name, cik] for every company we have data for, built ahead of time from SEC filings.
 let tickers = [];
 let companyCount = 500;
+// Typical figures per sector ({ [sector]: { workersToOwners } }), for context on each page.
+let sectors = {};
 // The data's fingerprint (written into index.html by scripts/stamp.js), so a browser fetches
 // fresh data right after it changes instead of reusing a cached copy.
 const DATA_VERSION = document.querySelector('meta[name="data-version"]')?.content;
@@ -40,6 +42,7 @@ const ready = fetch(dataUrl('data/companies.json'))
   .then((r) => (r.ok ? r.json() : { companies: [] }))
   .then((d) => {
     tickers = d.companies;
+    sectors = d.sectors ?? {};
     if (d.updated) $('#updated').textContent = `, updated ${longDate(d.updated)}`;
     // Share classes (GOOGL/GOOG) are separate rows for the same company.
     companyCount = new Set(d.companies.map((c) => c[2])).size;
@@ -144,7 +147,7 @@ async function load(ticker) {
     if (!res.ok) throw new Error("Couldn't load this company's data. Try reloading the page.");
     const data = await res.json();
     if (id !== requestId) return;
-    renderCompany(data);
+    renderCompany({ ...data, sector: entry[3] ?? null });
   } catch (err) {
     if (id !== requestId) return;
     result.innerHTML = `<div class="card"><p class="status error">${esc(err.message)}</p></div>`;
@@ -340,18 +343,21 @@ function renderWhoGets(d, short) {
   ].filter(Boolean);
 
   // Grouped by who ends up with it: people, the wider economy, and the owners' side.
+  // Workers first, then owners, so the two can be compared, then everyone else.
   const GROUPS = [
     { title: 'Paid to workers', note: 'Wages, benefits and stock pay for employees.', keys: ['workers'] },
+    { title: 'Owners\u2019 profit', note: 'What\u2019s left after everyone else is paid. It belongs to the owners.', keys: ['owners', 'kept'] },
     {
       title: 'Spent in the wider economy',
       note: 'Paid to suppliers, landlords and lenders, and taxes to governments.',
       keys: ['other', 'governments'],
     },
-    { title: 'Owners\u2019 profit', note: 'What\u2019s left after everyone else is paid. It belongs to the owners.', keys: ['owners', 'kept'] },
   ];
   const groups = GROUPS.map((g) => ({ ...g, blocks: g.keys.map((k) => blocks.find((b) => b.key === k)).filter(Boolean) }));
   // The CEO is a worker too: how their pay compares with the typical employee's, and with all pay.
   groups.find((g) => g.keys.includes('workers')).extra = ceoPayRow(d, workers);
+  // Comparing the two groups above: pay to workers for every $1 paid out to owners.
+  groups.find((g) => g.keys.includes('owners')).extra = workersOwnersRow(d, w);
   blocks.splice(0, blocks.length, ...groups.flatMap((g) => g.blocks));
 
   const positive = blocks.filter((b) => b.value > 0);
@@ -388,6 +394,27 @@ function renderWhoGets(d, short) {
         .join('')}
       ${publicLine}
     </div>`;
+}
+
+/** 0.22×, 4.1×, 36× */
+const times = (r) => (r < 1 ? r.toFixed(2) : r < 10 ? r.toFixed(1) : Math.round(r).toLocaleString('en-US'));
+
+/** Workers vs owners: pay to workers for every $1 paid out to owners, next to the sector's typical figure. */
+function workersOwnersRow(d, w) {
+  const r = workersToOwners(w);
+  if (!r) return '';
+  const est = r.estimate ? ' (est.)' : '';
+  const typical = sectors[d.sector]?.workersToOwners;
+  const context = typical != null ? ` · Typical in ${esc(d.sector)}: ${times(typical)}×` : '';
+  const sub = r.noPayouts
+    ? `It paid nothing to owners this year (no dividends or buybacks)${context}`
+    : `For every $1 paid out to owners, ${per100(r.ratio)} went to workers${est}${context}`;
+  return `
+          <li class="who-stat">
+            <span class="who-icon" style="--c:var(--ink-2)">${ICONS.balance}</span>
+            <span class="label">Workers vs owners<span class="sub">${sub}</span></span>
+            <span class="amt"><span class="per">${r.noPayouts ? '—' : `${times(r.ratio)}×`}</span></span>
+          </li>`;
 }
 
 /** The CEO pay multiplier: CEO pay as a multiple of the median employee's, from the proxy. */
