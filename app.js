@@ -1,7 +1,7 @@
 import { displayName, longDate, money, per100, searchTickers, shortName } from './format.js';
 import { cents, governmentShare, renderGovernment } from './government.js';
 import { explainRow } from './explain.js';
-import { whoGets } from './whogets.js';
+import { ceoShareOfWorkerPay, whoGets } from './whogets.js';
 import { ICONS } from './icons.js';
 
 const POPULAR = [
@@ -335,8 +335,8 @@ function renderWhoGets(d, short) {
     { title: 'Owners\u2019 profit', note: 'What\u2019s left after everyone else is paid. It belongs to the owners.', keys: ['owners', 'kept'] },
   ];
   const groups = GROUPS.map((g) => ({ ...g, blocks: g.keys.map((k) => blocks.find((b) => b.key === k)).filter(Boolean) }));
-  // Not part of the $100: how CEO pay compares with the typical employee's, shown with the owners.
-  groups.find((g) => g.keys.includes('owners')).extra = ceoPayRow(d);
+  // The CEO is a worker too: how their pay compares with the typical employee's, and with all pay.
+  groups.find((g) => g.keys.includes('workers')).extra = ceoPayRow(d, workers);
   blocks.splice(0, blocks.length, ...groups.flatMap((g) => g.blocks));
 
   const positive = blocks.filter((b) => b.value > 0);
@@ -376,7 +376,7 @@ function renderWhoGets(d, short) {
 }
 
 /** The CEO pay multiplier: CEO pay as a multiple of the median employee's, from the proxy. */
-function ceoPayRow(d) {
+function ceoPayRow(d, workers) {
   const w = d.workforce;
   if (!w?.ceoRatio || !w.medianPay) return '';
   const r = w.ceoRatio;
@@ -390,12 +390,21 @@ function ceoPayRow(d) {
     w.ceoPay >= 200e6
       ? ' Most of this is a stock award granted up front for several years of work and valued when granted. What the CEO ends up receiving depends on the share price and on hitting targets.'
       : '';
+  // How much of all pay to workers went to this one person.
+  const pct = ceoShareOfWorkerPay(d, workers);
+  const est = workers?.source === 'estimate' ? ' (estimated)' : '';
+  let share = '';
+  if (pct != null && pct >= 100) share = ` That\u2019s more than ${Math.floor(pct / 100)} times what all its other employees were paid combined${est}.`;
+  else if (pct != null) {
+    const p = pct < 0.01 ? 'less than 0.01' : pct < 1 ? pct.toFixed(2) : pct.toFixed(1);
+    share = ` That\u2019s ${p}% of everything paid to its workers${est}, to one person.`;
+  }
   return `
           <li class="who-stat">
-            <span class="who-icon" style="--c:var(--ink-2)">${ICONS.ceo}</span>
+            <span class="who-icon" style="--c:var(--s4)">${ICONS.ceo}</span>
             <span class="label">CEO pay multiplier<span class="sub">The CEO was paid about ${money(w.ceoPay)}${year}, ${times} times the
-              ${money(w.medianPay)} the typical (median) employee was paid, as stated in ${doc}.${upfront}
-              Not part of the $100.</span></span>
+              ${money(w.medianPay)} the typical (median) employee was paid, as stated in ${doc}.${share}${upfront}
+              Already counted in Workers above.</span></span>
             <span class="amt"><span class="per">${short}×</span></span>
           </li>`;
 }

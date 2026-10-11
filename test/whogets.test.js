@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { whoGets } from '../whogets.js';
+import { ceoShareOfWorkerPay, whoGets } from '../whogets.js';
 
 const company = (over = {}) => ({
   totalRevenue: 1000,
@@ -63,4 +63,11 @@ test('whoGets splits US taxes into federal and state when the filing does', () =
   assert.equal(neg.state, undefined);
   assert.equal(neg.us, 3);
   assert.equal(whoGets(company()).governments.state, undefined);
+});
+
+test('ceoShareOfWorkerPay is CEO pay over all worker pay', () => {
+  const d = { workforce: { ceoPay: 74_300_000 } };
+  assert.equal(Math.round(ceoShareOfWorkerPay(d, { value: 23_200_000_000 }) * 100) / 100, 0.32);
+  assert.equal(ceoShareOfWorkerPay(d, null), null);
+  assert.equal(ceoShareOfWorkerPay({ workforce: {} }, { value: 1e9 }), null);
 });
