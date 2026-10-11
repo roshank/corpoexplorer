@@ -381,6 +381,8 @@ function ceoPayRow(d) {
   if (!w?.ceoRatio || !w.medianPay) return '';
   const r = w.ceoRatio;
   const times = r < 10 ? r.toFixed(1) : Math.round(r).toLocaleString('en-US');
+  // Tesla's 2,522,203× doesn't fit the amount column on a phone: 2.5M×.
+  const short = r >= 100_000 ? new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(r) : times;
   const year = w.payYear ? ` in ${w.payYear}` : '';
   const doc = w.payFiling ? `<a href="${esc(w.payFiling.url)}" target="_blank" rel="noopener">its ${w.payFiling.form === 'DEF 14A' ? 'proxy statement' : '10-K amendment'}</a>` : 'its proxy statement';
   // Pay this large is almost always a multi-year stock award counted in full the year it's granted.
@@ -394,7 +396,7 @@ function ceoPayRow(d) {
             <span class="label">CEO pay multiplier<span class="sub">The CEO was paid about ${money(w.ceoPay)}${year}, ${times} times the
               ${money(w.medianPay)} the typical (median) employee was paid, as stated in ${doc}.${upfront}
               Not part of the $100.</span></span>
-            <span class="amt"><span class="per">${times}×</span></span>
+            <span class="amt"><span class="per">${short}×</span></span>
           </li>`;
 }
 
