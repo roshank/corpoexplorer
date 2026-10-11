@@ -30,7 +30,7 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
 
 // [ticker, name, cik] for every company we have data for, built ahead of time from SEC filings.
 let tickers = [];
-let companyCount = 51;
+let companyCount = 500;
 // The data's fingerprint (written into index.html by scripts/stamp.js), so a browser fetches
 // fresh data right after it changes instead of reusing a cached copy.
 const DATA_VERSION = document.querySelector('meta[name="data-version"]')?.content;
@@ -135,7 +135,7 @@ async function load(ticker) {
     if (!entry) {
       throw new Error(
         count
-          ? `We don't have ${ticker} yet. For now we cover ${companyCount} of the largest US companies that file a 10-K annual report.`
+          ? `We don't have ${ticker}. We cover the ${companyCount} companies in the S&P 500 that file a US annual report (10-K).`
           : "Couldn't load the company list. Try reloading the page.",
       );
     }
