@@ -192,9 +192,10 @@ function renderCompany(d) {
 
   if (d.views.length) {
     const tabs = result.querySelector('.tabs');
-    const showView = (v) =>
+    const showView = (v) => {
+      const el = result.querySelector('#income');
       renderBreakdown(
-        result.querySelector('#income'),
+        el,
         v.items.map((it, i) => ({
           ...it,
           color: it.residual || it.folded ? NEUTRAL : `var(${SERIES[i % SERIES.length]})`,
@@ -206,6 +207,15 @@ function renderCompany(d) {
               : null,
         })),
       );
+      // Segments that sell to each other (a pharmacy business supplying an insurance business)
+      // add up to more than total revenue; say how much was counted twice.
+      if (v.betweenBusinesses) {
+        el.insertAdjacentHTML(
+          'beforeend',
+          `<p class="hint">Shares of what the businesses brought in before removing ${money(v.betweenBusinesses)} of sales between them, which the company counts once in its total.</p>`,
+        );
+      }
+    };
     tabs.addEventListener('click', (e) => {
       const b = e.target.closest('button');
       if (!b) return;

@@ -16,7 +16,7 @@ import { stamp } from './stamp.js';
 import { coverage } from './coverage.js';
 
 // Bump when the shape or the logic of the per-company data changes, to force a rebuild.
-const DATA_VERSION = 12;
+const DATA_VERSION = 13;
 
 const DATA = fileURLToPath(new URL('../data/', import.meta.url));
 const COMPANIES = DATA + 'c/';
