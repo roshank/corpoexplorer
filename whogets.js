@@ -64,3 +64,13 @@ export function whoGets(d) {
     kept: { per100: cents(profit - dividends - buybacks), profit },
   };
 }
+
+/**
+ * The CEO's pay as a percentage of everything paid to workers, or null when either is unknown.
+ * Uses the same workers figure as the $100 view (reported, or headcount x median pay).
+ */
+export function ceoShareOfWorkerPay(d, workers) {
+  const ceo = d.workforce?.ceoPay;
+  if (!ceo || !workers?.value || workers.value <= 0) return null;
+  return (ceo / workers.value) * 100;
+}

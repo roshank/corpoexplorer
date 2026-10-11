@@ -24,4 +24,8 @@ export const ICONS = {
   kept: svg(
     '<rect x="3.5" y="4" width="17" height="15" rx="2"/><circle cx="12" cy="11.5" r="3.5"/><path d="M12 8v1.5M12 13.5V15M8.5 11.5H10M14 11.5h1.5"/><path d="M6.5 19v2M17.5 19v2"/>',
   ),
+  // A person in a suit and tie, for the CEO.
+  ceo: svg(
+    '<circle cx="12" cy="7" r="3.5"/><path d="M5 21a7 7 0 0 1 14 0"/><path d="M12 14l-1.2 2.2L12 21l1.2-4.8z"/>',
+  ),
 };

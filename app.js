@@ -1,7 +1,7 @@
 import { displayName, longDate, money, per100, searchTickers, shortName } from './format.js';
 import { cents, governmentShare, renderGovernment } from './government.js';
 import { explainRow } from './explain.js';
-import { whoGets } from './whogets.js';
+import { ceoShareOfWorkerPay, whoGets } from './whogets.js';
 import { ICONS } from './icons.js';
 
 const POPULAR = [
@@ -335,6 +335,8 @@ function renderWhoGets(d, short) {
     { title: 'Owners\u2019 profit', note: 'What\u2019s left after everyone else is paid. It belongs to the owners.', keys: ['owners', 'kept'] },
   ];
   const groups = GROUPS.map((g) => ({ ...g, blocks: g.keys.map((k) => blocks.find((b) => b.key === k)).filter(Boolean) }));
+  // The CEO is a worker too: how their pay compares with the typical employee's, and with all pay.
+  groups.find((g) => g.keys.includes('workers')).extra = ceoPayRow(d, workers);
   blocks.splice(0, blocks.length, ...groups.flatMap((g) => g.blocks));
 
   const positive = blocks.filter((b) => b.value > 0);
@@ -364,12 +366,40 @@ function renderWhoGets(d, short) {
           </li>`,
             )
             .join('')}
+          ${g.extra ?? ''}
         </ul>
       </div>`;
         })
         .join('')}
       ${publicLine}
     </div>`;
+}
+
+/** The CEO pay multiplier: CEO pay as a multiple of the median employee's, from the proxy. */
+function ceoPayRow(d, workers) {
+  const w = d.workforce;
+  if (!w?.ceoRatio || !w.medianPay) return '';
+  const r = w.ceoRatio;
+  const times = r < 10 ? r.toFixed(1) : Math.round(r).toLocaleString('en-US');
+  // Tesla's 2,522,203× doesn't fit the amount column on a phone: 2.5M×.
+  const short = r >= 100_000 ? new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(r) : times;
+  const year = w.payYear ? ` (${w.payYear})` : '';
+  const source = w.payFiling ? ` · <a href="${esc(w.payFiling.url)}" target="_blank" rel="noopener">Source</a>` : '';
+  // How much of all pay to workers went to this one person.
+  const pct = ceoShareOfWorkerPay(d, workers);
+  const est = workers?.source === 'estimate' ? ' (est.)' : '';
+  let share = '';
+  if (pct != null && pct >= 100) share = ` · ${Math.floor(pct / 100)}× all other worker pay${est}`;
+  else if (pct != null) share = ` · ${pct < 0.01 ? '<0.01' : pct < 1 ? pct.toFixed(2) : pct.toFixed(1)}% of all worker pay${est}`;
+  // Pay this large is almost always a multi-year stock award counted in full the year it's granted.
+  const upfront = w.ceoPay >= 200e6 ? ' · Mostly a multi-year stock award, valued up front' : '';
+  return `
+          <li class="who-stat">
+            <span class="who-icon" style="--c:var(--s4)">${ICONS.ceo}</span>
+            <span class="label">CEO pay multiplier<span class="sub">${money(w.ceoPay)} vs ${money(w.medianPay)} for the typical
+              employee${year}${share}${upfront}${source}</span></span>
+            <span class="amt"><span class="per">${short}×</span></span>
+          </li>`;
 }
 
 const NEUTRAL = 'var(--neutral-fill)';
