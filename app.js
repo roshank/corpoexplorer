@@ -383,28 +383,21 @@ function ceoPayRow(d, workers) {
   const times = r < 10 ? r.toFixed(1) : Math.round(r).toLocaleString('en-US');
   // Tesla's 2,522,203× doesn't fit the amount column on a phone: 2.5M×.
   const short = r >= 100_000 ? new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(r) : times;
-  const year = w.payYear ? ` in ${w.payYear}` : '';
-  const doc = w.payFiling ? `<a href="${esc(w.payFiling.url)}" target="_blank" rel="noopener">its ${w.payFiling.form === 'DEF 14A' ? 'proxy statement' : '10-K amendment'}</a>` : 'its proxy statement';
-  // Pay this large is almost always a multi-year stock award counted in full the year it's granted.
-  const upfront =
-    w.ceoPay >= 200e6
-      ? ' Most of this is a stock award granted up front for several years of work and valued when granted. What the CEO ends up receiving depends on the share price and on hitting targets.'
-      : '';
+  const year = w.payYear ? ` (${w.payYear})` : '';
+  const source = w.payFiling ? ` · <a href="${esc(w.payFiling.url)}" target="_blank" rel="noopener">Source</a>` : '';
   // How much of all pay to workers went to this one person.
   const pct = ceoShareOfWorkerPay(d, workers);
-  const est = workers?.source === 'estimate' ? ' (estimated)' : '';
+  const est = workers?.source === 'estimate' ? ' (est.)' : '';
   let share = '';
-  if (pct != null && pct >= 100) share = ` That\u2019s more than ${Math.floor(pct / 100)} times what all its other employees were paid combined${est}.`;
-  else if (pct != null) {
-    const p = pct < 0.01 ? 'less than 0.01' : pct < 1 ? pct.toFixed(2) : pct.toFixed(1);
-    share = ` That\u2019s ${p}% of everything paid to its workers${est}, to one person.`;
-  }
+  if (pct != null && pct >= 100) share = ` · ${Math.floor(pct / 100)}× all other worker pay${est}`;
+  else if (pct != null) share = ` · ${pct < 0.01 ? '<0.01' : pct < 1 ? pct.toFixed(2) : pct.toFixed(1)}% of all worker pay${est}`;
+  // Pay this large is almost always a multi-year stock award counted in full the year it's granted.
+  const upfront = w.ceoPay >= 200e6 ? ' · Mostly a multi-year stock award, valued up front' : '';
   return `
           <li class="who-stat">
             <span class="who-icon" style="--c:var(--s4)">${ICONS.ceo}</span>
-            <span class="label">CEO pay multiplier<span class="sub">The CEO was paid about ${money(w.ceoPay)}${year}, ${times} times the
-              ${money(w.medianPay)} the typical (median) employee was paid, as stated in ${doc}.${share}${upfront}
-              Already counted in Workers above.</span></span>
+            <span class="label">CEO pay multiplier<span class="sub">${money(w.ceoPay)} vs ${money(w.medianPay)} for the typical
+              employee${year}${share}${upfront}${source}</span></span>
             <span class="amt"><span class="per">${short}×</span></span>
           </li>`;
 }
