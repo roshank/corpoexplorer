@@ -604,6 +604,9 @@ h3.first {
 .who-rows .amt .per {
   font-size: 22px;
 }
+.who-rows li.who-stat {
+  border-top-style: dashed;
+}
 .not-reported {
   color: var(--muted);
   font-size: 15px;

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { extractHeadcount, extractMedianPay, findMedianPay } from '../lib/workforce.js';
+import { extractHeadcount, extractMedianPay, findMedianPay, findPayRatio } from '../lib/workforce.js';
 
 test('extractHeadcount finds the total, not subsets or other years', () => {
   assert.equal(extractHeadcount('As of December 31, 2025, we employed approximately 1,576,000 full-time and part-time employees.'), 1576000);
@@ -54,4 +54,20 @@ test('findMedianPay reads a pay-ratio table', () => {
     ),
     { pay: 125100, year: 2025 },
   );
+});
+
+test('findPayRatio reads the stated CEO pay ratio in its common forms', () => {
+  assert.equal(
+    findPayRatio('the 2025 annual total compensation of our median compensated employee was $139,483, and the ratio of these amounts is 533 to 1.'),
+    533,
+  );
+  assert.equal(findPayRatio('CEO to Median Employee Pay Ratio ¶ 293:1'), 293);
+  assert.equal(findPayRatio("median compensated employee was $40,206; Mr. Jassy's pay was $2,069,861, resulting in a ratio of those amounts of 1-to-51."), 51);
+  assert.equal(findPayRatio('The ratio of Mr. Buffett’s pay ($389,488) to the pay of the median employee ($93,709) was 4.16 to 1.'), 4.16);
+  // A "realized pay" ratio below 1 comes first in Tesla's filing; the required one follows.
+  assert.equal(
+    findPayRatio('Ratio of realized pay to median pay ¶ 0.00:1 ¶ The median pay was $62,786. Consequently, the applicable ratio of such amounts for 2025 was 2,522,203:1.'),
+    2522203,
+  );
+  assert.equal(findPayRatio('We grew revenue 3 to 1 against our median peer.'), null);
 });

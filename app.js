@@ -335,6 +335,8 @@ function renderWhoGets(d, short) {
     { title: 'Owners\u2019 profit', note: 'What\u2019s left after everyone else is paid. It belongs to the owners.', keys: ['owners', 'kept'] },
   ];
   const groups = GROUPS.map((g) => ({ ...g, blocks: g.keys.map((k) => blocks.find((b) => b.key === k)).filter(Boolean) }));
+  // Not part of the $100: how CEO pay compares with the typical employee's, shown with the owners.
+  groups.find((g) => g.keys.includes('owners')).extra = ceoPayRow(d);
   blocks.splice(0, blocks.length, ...groups.flatMap((g) => g.blocks));
 
   const positive = blocks.filter((b) => b.value > 0);
@@ -364,12 +366,36 @@ function renderWhoGets(d, short) {
           </li>`,
             )
             .join('')}
+          ${g.extra ?? ''}
         </ul>
       </div>`;
         })
         .join('')}
       ${publicLine}
     </div>`;
+}
+
+/** The CEO pay multiplier: CEO pay as a multiple of the median employee's, from the proxy. */
+function ceoPayRow(d) {
+  const w = d.workforce;
+  if (!w?.ceoRatio || !w.medianPay) return '';
+  const r = w.ceoRatio;
+  const times = r < 10 ? r.toFixed(1) : Math.round(r).toLocaleString('en-US');
+  const year = w.payYear ? ` in ${w.payYear}` : '';
+  const doc = w.payFiling ? `<a href="${esc(w.payFiling.url)}" target="_blank" rel="noopener">its ${w.payFiling.form === 'DEF 14A' ? 'proxy statement' : '10-K amendment'}</a>` : 'its proxy statement';
+  // Pay this large is almost always a multi-year stock award counted in full the year it's granted.
+  const upfront =
+    w.ceoPay >= 200e6
+      ? ' Most of this is a stock award granted up front for several years of work and valued when granted. What the CEO ends up receiving depends on the share price and on hitting targets.'
+      : '';
+  return `
+          <li class="who-stat">
+            <span class="who-icon" style="--c:var(--ink-2)">${ICONS.ceo}</span>
+            <span class="label">CEO pay multiplier<span class="sub">The CEO was paid about ${money(w.ceoPay)}${year}, ${times} times the
+              ${money(w.medianPay)} the typical (median) employee was paid, as stated in ${doc}.${upfront}
+              Not part of the $100.</span></span>
+            <span class="amt"><span class="per">${times}×</span></span>
+          </li>`;
 }
 
 const NEUTRAL = 'var(--neutral-fill)';
