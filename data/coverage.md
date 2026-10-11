@@ -9,7 +9,7 @@
 | Where it comes from | 465 | 95% |
 | Where it goes | 488 | 100% |
 | Itemized costs | 461 | 94% |
-| Workers | 401 | 82% |
+| Workers | 400 | 82% |
 | CEO pay multiplier | 406 | 83% |
 | US vs abroad taxes | 316 | 65% |
 
@@ -26,8 +26,8 @@
 | Industrials | 81 | 99% | 100% | 96% | 83% | 80% | 78% |
 | Information Technology | 75 | 100% | 100% | 100% | 89% | 89% | 71% |
 | Materials | 24 | 100% | 100% | 100% | 88% | 79% | 54% |
-| Real Estate | 29 | 66% | 100% | 83% | 79% | 86% | 38% |
-| Utilities | 30 | 87% | 100% | 87% | 77% | 97% | 10% |
+| Real Estate | 29 | 66% | 100% | 83% | 83% | 86% | 38% |
+| Utilities | 30 | 87% | 100% | 87% | 70% | 97% | 10% |
 
 ## Worth a look (77)
 
@@ -35,83 +35,83 @@ Unusual results. Often the filing was read wrong, but some are real (a net tax b
 
 | Ticker | Company | Why |
 | --- | --- | --- |
-| ACGL | ARCH CAPITAL GROUP LTD. | one cost line |
-| AES | THE AES CORPORATION | tax rate -241.3% |
-| AMCR | AMCOR PLC | tax rate 489.2% |
-| AMD | ADVANCED MICRO DEVICES, INC. | tax rate -2.5% |
+| ACGL | Arch Capital Group | one cost line |
+| AES | AES Corporation | tax rate -241.3% |
+| AMCR | Amcor | tax rate 489.2% |
+| AMD | Advanced Micro Devices | tax rate -2.5% |
 | APP | AppLovin Corporation | profit $60.83 per $100 |
-| APTV | APTIV PLC | tax rate 76.2% |
-| ARE | ALEXANDRIA REAL ESTATE EQUITIES, INC. | one cost line |
-| ARES | ARES MANAGEMENT CORPORATION | not itemized $3.16; workers estimate implausible |
+| APTV | Aptiv | tax rate 76.2% |
+| ARE | Alexandria Real Estate Equities | one cost line |
+| ARES | Ares Management | not itemized $3.16; workers estimate implausible |
 | AVGO | Broadcom Inc. | tax rate -1.7% |
-| AWK | AMERICAN WATER WORKS COMPANY, INC. | not itemized $6.42 |
+| AWK | American Water Works | not itemized $6.42 |
 | AXON | Axon Enterprise, Inc. | tax rate -557% |
-| BNY | THE BANK OF NEW YORK MELLON CORPORATION | one cost line |
-| BXP | BXP, INC. | one cost line; workers estimate implausible |
-| CASY | CASEY&#x2019;S GENERAL STORES, INC. | one cost line |
-| CEG | CONSTELLATION ENERGY CORPORATION | not itemized $11.81 |
-| CME | CME GROUP INC. | profit $62.45 per $100 |
-| CMI | CUMMINS INC. | tax rate 56.5% |
-| CPT | CAMDEN PROPERTY TRUST | one cost line; profit $2964.92 per $100; workers estimate implausible |
+| BNY | BNY Mellon | one cost line |
+| BXP | BXP, Inc. | one cost line |
+| CASY | Casey's | one cost line |
+| CEG | Constellation Energy | not itemized $11.81 |
+| CME | CME Group | profit $62.45 per $100 |
+| CMI | Cummins | tax rate 56.5% |
+| CPT | Camden Property Trust | one cost line; profit $2964.92 per $100; workers estimate implausible |
 | CSGP | CoStar Group, Inc. | tax rate 76.7% |
-| DD | DUPONT DE NEMOURS, INC. | tax rate 51% |
-| DIS | WALT DISNEY CO/ | tax rate -11.9% |
-| DVN | DEVON ENERGY CORP/DE | one cost line |
+| DD | DuPont | tax rate 51% |
+| DIS | Walt Disney Company (The) | tax rate -11.9% |
+| DVN | Devon Energy | one cost line |
 | ECHO | EchoStar Corporation | profit $-96.62 per $100 |
 | EL | Est&#xe9;e Lauder Companies Inc | tax rate 64.8% |
-| ERIE | ERIE INDEMNITY COMPANY | one cost line |
-| EXC | EXELON CORPORATION | one cost line |
-| FDS | FACTSET RESEARCH SYSTEMS INC. | workers estimate implausible |
-| FOXA | FOX CORPORATION | one cost line |
+| ERIE | Erie Indemnity | one cost line |
+| EXC | Exelon | one cost line |
+| FDS | FactSet | workers estimate implausible |
+| FOXA | Fox Corporation | one cost line |
 | GEV | GE Vernova Inc. | tax rate -72.5% |
-| GIS | GENERAL MILLS, INC. | tax rate 102.2% |
-| GM | GENERAL MOTORS COMPANY | one cost line |
-| GPC | GENUINE PARTS CO | tax rate -26.4% |
+| GIS | General Mills | tax rate 102.2% |
+| GM | General Motors | one cost line |
+| GPC | Genuine Parts Company | tax rate -26.4% |
 | HBAN | Huntington Bancshares Incorporated | profit $141.55 per $100; workers estimate implausible |
-| IBKR | INTERACTIVE BROKERS GROUP, INC. | profit $178.57 per $100; workers estimate implausible |
-| IBM | INTERNATIONAL BUSINESS MACHINES CORPORATION | tax rate -2.3% |
-| INTC | INTEL CORPORATION | tax rate 98.3% |
+| IBKR | Interactive Brokers | profit $178.57 per $100; workers estimate implausible |
+| IBM | IBM | tax rate -2.3% |
+| INTC | Intel | tax rate 98.3% |
 | INVH | Invitation Homes Inc. | one cost line |
-| KKR | KKR & CO. INC. | not itemized $5.63 |
+| KKR | KKR & Co. | not itemized $5.63 |
 | LITE | Lumentum Holdings Inc. | profit $-230.10 per $100 |
-| LNT | ALLIANT ENERGY CORP | tax rate -22.5% |
-| MAR | MARRIOTT INTERNATIONAL INC /MD/ | one cost line |
-| MCD | McDONALD&#x2019;S CORPORATION | tax rate 70.9% |
+| LNT | Alliant Energy | tax rate -22.5% |
+| MAR | Marriott International | one cost line |
+| MCD | McDonald's | tax rate 70.9% |
 | MGM | MGM Resorts International | tax rate -85.5% |
 | MOS | Mosaic Co | tax rate 52.7% |
 | MRNA | Moderna, Inc. | profit $-145.17 per $100 |
-| MRVL | MARVELL TECHNOLOGY, INC | tax rate 355.5% |
+| MRVL | Marvell Technology | tax rate 355.5% |
 | MU | Micron Technology, Inc. | profit $63.80 per $100 |
-| NEE | NEXTERA ENERGY INC | not itemized $3.32; tax rate -17.7% |
-| NOC | NORTHROP GRUMMAN CORP /DE/ | one cost line |
+| NEE | NextEra Energy | not itemized $3.32; tax rate -17.7% |
+| NOC | Northrop Grumman | one cost line |
 | NVR | NVR, Inc. | one cost line |
-| NWSA | NEWS CORPORATION | workers estimate implausible |
+| NWSA | News Corp | workers estimate implausible |
 | OMC | Omnicom Group Inc. | tax rate 87.1% |
-| PCG | PG&E CORP | tax rate -11.6% |
-| PFE | PFIZER INC | tax rate -3.5% |
-| PFG | PRINCIPAL FINANCIAL GROUP, INC | one cost line |
-| PHM | PULTEGROUP, INC. | one cost line |
-| PSA | PUBLIC STORAGE | tax rate -0.4% |
+| PCG | PG&E Corporation | tax rate -11.6% |
+| PFE | Pfizer | tax rate -3.5% |
+| PFG | Principal Financial Group | one cost line |
+| PHM | PulteGroup | one cost line |
+| PSA | Public Storage | tax rate -0.4% |
 | PSX | Phillips 66 | one cost line; tax rate 86.2% |
 | PYPL | PayPal Holdings, Inc. | tax rate 72.9% |
-| QCOM | QUALCOMM INC/DE | tax rate 56.2% |
+| QCOM | Qualcomm | tax rate 56.2% |
 | RDDT | Reddit, Inc. | tax rate -0.2% |
-| RJF | RAYMOND JAMES FINANCIAL, INC. | one cost line |
-| RSG | REPUBLIC SERVICES, INC. | not itemized $12.81 |
+| RJF | Raymond James Financial | one cost line |
+| RSG | Republic Services | not itemized $12.81 |
 | SNA | Snap-on Inc | one cost line |
-| SPG | SIMON PROPERTY GROUP, INC. | profit $84.28 per $100 |
-| SRE | SEMPRA | tax rate 60% |
+| SPG | Simon Property Group | profit $84.28 per $100 |
+| SRE | Sempra | tax rate 60% |
 | TPL | Texas Pacific Land Corporation | profit $60.31 per $100 |
-| UBER | UBER TECHNOLOGIES, INC. | tax rate -74.9% |
+| UBER | Uber | tax rate -74.9% |
 | VEEV | Veeva Systems Inc. | workers estimate implausible |
 | VICI | VICI Properties Inc. | profit $69.28 per $100 |
 | VTR | Ventas, Inc. | tax rate -6.9% |
-| WDC | WESTERN DIGITAL CORPORATION | profit $72.95 per $100 |
-| WELL | WELLTOWER INC. | one cost line |
-| WST | WEST PHARMACEUTICAL SERVICES, INC. | workers estimate implausible |
-| WY | WEYERHAEUSER COMPANY | tax rate -24.6% |
-| XEL | XCEL ENERGY INC | tax rate -13.8% |
-| YUM | YUM! BRANDS, INC. | tax rate 48.5%; workers estimate implausible |
+| WDC | Western Digital | profit $72.95 per $100 |
+| WELL | Welltower | one cost line |
+| WST | West Pharmaceutical Services | workers estimate implausible |
+| WY | Weyerhaeuser | tax rate -24.6% |
+| XEL | Xcel Energy | tax rate -13.8% |
+| YUM | Yum! Brands | tax rate 48.5%; workers estimate implausible |
 
 ## Missing parts
 
@@ -151,7 +151,7 @@ Unusual results. Often the filing was read wrong, but some are real (a net tax b
 | BKR | Energy | US vs abroad taxes |
 | BNY | Financials | Itemized costs |
 | BX | Financials | Where it comes from, CEO pay multiplier |
-| BXP | Real Estate | Where it comes from, Itemized costs, Workers, US vs abroad taxes |
+| BXP | Real Estate | Where it comes from, Itemized costs, US vs abroad taxes |
 | CARR | Industrials | US vs abroad taxes |
 | CASY | Consumer Staples | Where it comes from, Itemized costs, US vs abroad taxes |
 | CB | Financials | US vs abroad taxes |
@@ -168,7 +168,7 @@ Unusual results. Often the filing was read wrong, but some are real (a net tax b
 | CMCSA | Communication Services | Workers, CEO pay multiplier |
 | CME | Financials | CEO pay multiplier |
 | CMI | Industrials | Workers, CEO pay multiplier |
-| CMS | Utilities | US vs abroad taxes |
+| CMS | Utilities | Workers, US vs abroad taxes |
 | CNC | Health Care | CEO pay multiplier, US vs abroad taxes |
 | CNP | Utilities | US vs abroad taxes |
 | COHR | Information Technology | US vs abroad taxes |
@@ -317,7 +317,7 @@ Unusual results. Often the filing was read wrong, but some are real (a net tax b
 | PLD | Real Estate | Workers |
 | PM | Consumer Staples | US vs abroad taxes |
 | PNW | Utilities | Where it comes from, Workers, US vs abroad taxes |
-| PPL | Utilities | US vs abroad taxes |
+| PPL | Utilities | Workers, US vs abroad taxes |
 | PRU | Financials | Workers, US vs abroad taxes |
 | PSA | Real Estate | US vs abroad taxes |
 | PSX | Energy | Itemized costs, CEO pay multiplier |

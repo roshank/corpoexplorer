@@ -103,3 +103,10 @@ test('extractHeadcount reads descriptors with commas, "comprises" and "employee 
     97100,
   );
 });
+
+test('findPayRatio skips ratios quoted for other companies', () => {
+  assert.equal(
+    findPayRatio('We consider the pay ratio specified herein to be a reasonable estimate. ¶ 61:1 ¶ CEO PAY RATIO ¶ 3x lower ¶ than the median ¶ and is 3x lower than the median ratio for S&P 500 companies (195:1)'),
+    61,
+  );
+});
