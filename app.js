@@ -344,6 +344,7 @@ function renderWhoGets(d, short) {
       <div class="topline-bar" role="img" aria-label="${esc(blocks.filter((b) => b.value != null).map((b) => `${b.label} ${per100(b.value)}`).join(', '))}">
         ${positive.map((b) => `<span style="flex-grow:${b.value};background-color:var(${b.color})"></span>`).join('')}
       </div>
+      <div class="topline-scale" aria-hidden="true"><span>$0</span><span>$100</span></div>
       ${groups
         .map((g) => {
           const known = g.blocks.filter((b) => b.value != null);
