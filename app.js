@@ -413,25 +413,62 @@ function versusSection(d, w) {
   else if (r.ratio > 1 / 1.05) says = 'Workers and owners got about the same.';
   else says = `Workers got ${times(1 / r.ratio)} times what owners got.`;
   const typical = sectors[d.sector]?.ownersToWorkers;
-  const context = typical != null ? ` Typical in ${esc(d.sector)}: ${times(typical)}×.` : '';
-  const max = Math.max(r.workers, r.owners, 0.01);
-  const bar = (label, color, v) => `
-        <div class="vs-row">
-          <span class="vs-label">${label}</span>
-          <span class="vs-track"><span style="width:${Math.max((v / max) * 100, v > 0 ? 1 : 0)}%;background-color:var(${color})"></span></span>
-          <span class="vs-amt">${per100(v)}</span>
-        </div>`;
+  const context = typical != null ? ` Typical in ${esc(d.sector)}: owners get ${times(typical)}× what workers get.` : '';
   return `
     <section class="vs" aria-label="Workers vs owners">
       <h3 class="vs-head">Workers vs owners <span>Who gets more?</span></h3>
-      <div class="vs-main">
-        <span class="vs-big">${r.owners === 0 ? 0 : times(r.ratio)}×</span>
-        <span class="vs-says">${says}</span>
-      </div>
-      ${bar(`Workers${est}`, '--s4', r.workers)}
-      ${bar('Owners', '--s5', r.owners)}
+      ${scale(r, est, says)}
+      <p class="vs-says">${says}</p>
       <p class="vs-note">Of every $100: pay to workers vs money paid out to owners as dividends and buybacks.${context}</p>
     </section>`;
+}
+
+/**
+ * A balance scale with workers on the left pan and owners on the right. The beam tips toward
+ * whoever got more, further the bigger the gap, and a badge over the heavier pan says by how much.
+ */
+function scale(r, est, says) {
+  const W = 340;
+  const cx = W / 2;
+  const top = 68; // pivot
+  const arm = 118;
+  // Tilt: positive when owners got more. Grows with the log of the ratio, capped.
+  const sign = r.owners === 0 ? -1 : Math.sign(Math.log(r.ratio));
+  const size = r.owners === 0 ? 1 : Math.min(Math.abs(Math.log2(r.ratio)) / 3, 1);
+  const even = r.owners > 0 && Math.abs(Math.log(r.ratio)) < Math.log(1.05);
+  const deg = even ? 0 : sign * (4 + 12 * size);
+  const rad = (deg * Math.PI) / 180;
+  const end = (side) => ({ x: cx + side * arm * Math.cos(rad), y: top + side * arm * Math.sin(rad) });
+  const L = end(-1);
+  const R = end(1);
+  const drop = 62; // string length from beam end to pan
+  const pan = (p, color, icon, amount, label) => `
+      <line x1="${p.x - 26}" y1="${p.y + drop}" x2="${p.x}" y2="${p.y}" class="sc-string"/>
+      <line x1="${p.x + 26}" y1="${p.y + drop}" x2="${p.x}" y2="${p.y}" class="sc-string"/>
+      <path d="M${p.x - 34} ${p.y + drop} h68 a34 12 0 0 1 -68 0z" fill="var(${color})" opacity="0.9"/>
+      <circle cx="${p.x}" cy="${p.y + drop - 22}" r="20" fill="var(--surface)" stroke="var(${color})" stroke-width="2"/>
+      <g transform="translate(${p.x - 13} ${p.y + drop - 35})" style="color:var(${color})">${icon}</g>
+      <text x="${p.x}" y="${p.y + drop + 34}" class="sc-amt">${amount}</text>
+      <text x="${p.x}" y="${p.y + drop + 52}" class="sc-label">${label}</text>`;
+  // The badge sits over the pivot and says who got more; the tilt shows which way.
+  const badgeText = even
+    ? 'About even'
+    : r.owners === 0
+      ? 'All to workers'
+      : `${sign > 0 ? 'Owners' : 'Workers'} get ${times(Math.max(r.ratio, 1 / r.ratio))}× more`;
+  const bw = badgeText.length * 8.2 + 24;
+  const badge = `<g class="sc-badge"><rect x="${cx - bw / 2}" y="4" width="${bw}" height="28" rx="14"/><text x="${cx}" y="23">${badgeText}</text></g>`;
+  const H = Math.max(L.y, R.y) + drop + 60;
+  return `
+      <svg class="sc" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(says)}">
+        <path d="M${cx - 40} ${H - 6} h80" class="sc-post"/>
+        <line x1="${cx}" y1="${top}" x2="${cx}" y2="${H - 6}" class="sc-post"/>
+        <line x1="${L.x}" y1="${L.y}" x2="${R.x}" y2="${R.y}" class="sc-beam"/>
+        <circle cx="${cx}" cy="${top}" r="6" class="sc-pivot"/>
+        ${pan(L, '--s4', ICONS.workers, per100(r.workers), `Workers${est}`)}
+        ${pan(R, '--s5', ICONS.owners, per100(r.owners), 'Owners')}
+        ${badge}
+      </svg>`;
 }
 
 /** The CEO pay multiplier: CEO pay as a multiple of the median employee's, from the proxy. */
