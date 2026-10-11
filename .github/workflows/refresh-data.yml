@@ -37,7 +37,7 @@ jobs:
           node scripts/build-data.js --target 50
       - name: Commit changes
         run: |
-          git add data
+          git add data index.html
           if git diff --cached --quiet; then
             echo "No changes."
             exit 0

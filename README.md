@@ -18,6 +18,15 @@ The **Refresh data** GitHub Action (`.github/workflows/refresh-data.yml`) runs e
 
 It needs one repository secret, because SEC rejects requests without a contact email: **Settings → Secrets and variables → Actions → New repository secret**, name `SEC_USER_AGENT`, value like `CorpoExplorer you@example.com`.
 
+### Version stamps
+
+GitHub Pages tells browsers to reuse files for 10 minutes, so after a change people could see the old site. `scripts/stamp.js` adds a fingerprint of each file to its link in `index.html`:
+- `styles.css?v=…` and `app.js?v=…`
+- an import map for the modules `app.js` imports
+- a data version that `app.js` adds to every data request
+
+Any change gives a new URL, so a normal reload gets everything new. The **Stamp versions** Action re-stamps `index.html` after every push to `main`, the data build re-stamps after new data, and `npm test` fails if the stamps are stale (fix it with `npm run stamp`).
+
 ### Working on it locally
 
 Requires Node 20+. There are no dependencies to install.
@@ -26,6 +35,7 @@ Requires Node 20+. There are no dependencies to install.
 | --- | --- |
 | `npm run preview` | Serve the site at http://localhost:3000, the same way Pages does |
 | `SEC_USER_AGENT="Name email" npm run build` | Rebuild `data/` from SEC (add `-- --only AAPL,MSFT` for a few companies) |
+| `npm run stamp` | Update the version stamps in `index.html` (`npm test` checks them) |
 | `npm test` | Run the unit tests (offline) |
 | `SEC_USER_AGENT="Name email" npm run smoke [TICKERS…]` | Print live results from SEC for a few companies |
 

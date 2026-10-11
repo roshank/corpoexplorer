@@ -10,6 +10,7 @@ import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { companyFromFiling, getTickers, latestAnnualReport } from '../lib/sec.js';
 import { getFederalAwards } from '../lib/usaspending.js';
+import { stamp } from './stamp.js';
 
 // Bump when the shape or the logic of the per-company data changes, to force a rebuild.
 const DATA_VERSION = 12;
@@ -114,3 +115,6 @@ console.log(
   `\n${built.length} companies (${stats.fresh} built, ${stats.reused} unchanged, ${stats.skipped} without a 10-K, ${stats.failed} failed) in ${secs}s` +
     (prevByCik.size ? `; previously ${prevByCik.size}` : ''),
 );
+
+// New data means a new data fingerprint in index.html, so browsers fetch it straight away.
+if (await stamp()) console.log('Stamped index.html with the new data version.');

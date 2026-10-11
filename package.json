@@ -8,6 +8,7 @@
   "scripts": {
     "build": "node scripts/build-data.js",
     "preview": "node scripts/preview.js",
+    "stamp": "node scripts/stamp.js",
     "test": "node --test test/*.test.js",
     "smoke": "node scripts/smoke.js"
   }

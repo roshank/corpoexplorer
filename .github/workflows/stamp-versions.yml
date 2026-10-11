@@ -1,0 +1,36 @@
+# Keeps the version stamps in index.html matching the files on main, so browsers fetch new
+# copies of the site's files right after a change instead of reusing cached ones.
+name: Stamp versions
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: stamp-versions
+  cancel-in-progress: false
+
+jobs:
+  stamp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/stamp.js
+      - name: Commit changes
+        run: |
+          git add index.html
+          if git diff --cached --quiet; then
+            echo "Already up to date."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Stamp file versions in index.html"
+          git push
