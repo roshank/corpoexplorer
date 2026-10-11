@@ -1,7 +1,7 @@
 import { displayName, longDate, money, per100, searchTickers, shortName } from './format.js';
 import { cents, governmentShare, renderGovernment } from './government.js';
 import { explainRow } from './explain.js';
-import { ceoShareOfWorkerPay, whoGets } from './whogets.js';
+import { ceoShareOfWorkerPay, ownersToWorkers, whoGets } from './whogets.js';
 import { ICONS } from './icons.js';
 
 const POPULAR = [
@@ -30,7 +30,9 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
 
 // [ticker, name, cik] for every company we have data for, built ahead of time from SEC filings.
 let tickers = [];
-let companyCount = 51;
+let companyCount = 500;
+// Typical figures per sector ({ [sector]: { ownersToWorkers } }), for context on each page.
+let sectors = {};
 // The data's fingerprint (written into index.html by scripts/stamp.js), so a browser fetches
 // fresh data right after it changes instead of reusing a cached copy.
 const DATA_VERSION = document.querySelector('meta[name="data-version"]')?.content;
@@ -40,6 +42,7 @@ const ready = fetch(dataUrl('data/companies.json'))
   .then((r) => (r.ok ? r.json() : { companies: [] }))
   .then((d) => {
     tickers = d.companies;
+    sectors = d.sectors ?? {};
     if (d.updated) $('#updated').textContent = `, updated ${longDate(d.updated)}`;
     // Share classes (GOOGL/GOOG) are separate rows for the same company.
     companyCount = new Set(d.companies.map((c) => c[2])).size;
@@ -135,7 +138,7 @@ async function load(ticker) {
     if (!entry) {
       throw new Error(
         count
-          ? `We don't have ${ticker} yet. For now we cover ${companyCount} of the largest US companies that file a 10-K annual report.`
+          ? `We don't have ${ticker}. We cover the ${companyCount} companies in the S&P 500 that file a US annual report (10-K).`
           : "Couldn't load the company list. Try reloading the page.",
       );
     }
@@ -144,7 +147,7 @@ async function load(ticker) {
     if (!res.ok) throw new Error("Couldn't load this company's data. Try reloading the page.");
     const data = await res.json();
     if (id !== requestId) return;
-    renderCompany(data);
+    renderCompany({ ...data, sector: entry[3] ?? null });
   } catch (err) {
     if (id !== requestId) return;
     result.innerHTML = `<div class="card"><p class="status error">${esc(err.message)}</p></div>`;
@@ -192,9 +195,10 @@ function renderCompany(d) {
 
   if (d.views.length) {
     const tabs = result.querySelector('.tabs');
-    const showView = (v) =>
+    const showView = (v) => {
+      const el = result.querySelector('#income');
       renderBreakdown(
-        result.querySelector('#income'),
+        el,
         v.items.map((it, i) => ({
           ...it,
           color: it.residual || it.folded ? NEUTRAL : `var(${SERIES[i % SERIES.length]})`,
@@ -206,6 +210,15 @@ function renderCompany(d) {
               : null,
         })),
       );
+      // Segments that sell to each other (a pharmacy business supplying an insurance business)
+      // add up to more than total revenue; say how much was counted twice.
+      if (v.betweenBusinesses) {
+        el.insertAdjacentHTML(
+          'beforeend',
+          `<p class="hint">Shares of what the businesses brought in before removing ${money(v.betweenBusinesses)} of sales between them, which the company counts once in its total.</p>`,
+        );
+      }
+    };
     tabs.addEventListener('click', (e) => {
       const b = e.target.closest('button');
       if (!b) return;
@@ -330,18 +343,21 @@ function renderWhoGets(d, short) {
   ].filter(Boolean);
 
   // Grouped by who ends up with it: people, the wider economy, and the owners' side.
+  // Workers first, then owners, so the two can be compared, then everyone else.
   const GROUPS = [
     { title: 'Paid to workers', note: 'Wages, benefits and stock pay for employees.', keys: ['workers'] },
+    { title: 'Owners\u2019 profit', note: 'What\u2019s left after everyone else is paid. It belongs to the owners.', keys: ['owners', 'kept'] },
     {
       title: 'Spent in the wider economy',
       note: 'Paid to suppliers, landlords and lenders, and taxes to governments.',
       keys: ['other', 'governments'],
     },
-    { title: 'Owners\u2019 profit', note: 'What\u2019s left after everyone else is paid. It belongs to the owners.', keys: ['owners', 'kept'] },
   ];
   const groups = GROUPS.map((g) => ({ ...g, blocks: g.keys.map((k) => blocks.find((b) => b.key === k)).filter(Boolean) }));
   // The CEO is a worker too: how their pay compares with the typical employee's, and with all pay.
   groups.find((g) => g.keys.includes('workers')).extra = ceoPayRow(d, workers);
+  // Its own section after Owners' profit: who got more, workers or owners.
+  groups.find((g) => g.keys.includes('owners')).after = versusSection(d, w);
   blocks.splice(0, blocks.length, ...groups.flatMap((g) => g.blocks));
 
   const positive = blocks.filter((b) => b.value > 0);
@@ -373,11 +389,86 @@ function renderWhoGets(d, short) {
             .join('')}
           ${g.extra ?? ''}
         </ul>
-      </div>`;
+      </div>${g.after ?? ''}`;
         })
         .join('')}
       ${publicLine}
     </div>`;
+}
+
+/** 0.22×, 4.1×, 36× */
+const times = (r) => (r < 1 ? r.toFixed(2) : r < 10 ? r.toFixed(1) : Math.round(r).toLocaleString('en-US'));
+
+/**
+ * Workers vs owners, who gets more: what went to owners as a multiple of what went to workers
+ * (10x, 50x), with both amounts as bars and the sector's typical figure.
+ */
+function versusSection(d, w) {
+  const r = ownersToWorkers(w);
+  if (!r) return '';
+  const est = r.estimate ? ' (est.)' : '';
+  let says;
+  if (r.owners === 0) says = 'Owners got no payouts this year: no dividends or buybacks.';
+  else if (r.ratio >= 1.05) says = `Owners got ${times(r.ratio)} times what workers got.`;
+  else if (r.ratio > 1 / 1.05) says = 'Workers and owners got about the same.';
+  else says = `Workers got ${times(1 / r.ratio)} times what owners got.`;
+  const typical = sectors[d.sector]?.ownersToWorkers;
+  const context = typical != null ? ` Typical in ${esc(d.sector)}: owners get ${times(typical)}× what workers get.` : '';
+  return `
+    <section class="vs" aria-label="Workers vs owners">
+      <h3 class="vs-head">Workers vs owners <span>Who gets more?</span></h3>
+      ${scale(r, est, says)}
+      <p class="vs-says">${says}</p>
+      <p class="vs-note">Of every $100: pay to workers vs money paid out to owners as dividends and buybacks.${context}</p>
+    </section>`;
+}
+
+/**
+ * A balance scale with workers on the left pan and owners on the right. The beam tips toward
+ * whoever got more, further the bigger the gap, and a badge over the heavier pan says by how much.
+ */
+function scale(r, est, says) {
+  const W = 340;
+  const cx = W / 2;
+  const top = 68; // pivot
+  const arm = 118;
+  // Tilt: positive when owners got more. Grows with the log of the ratio, capped.
+  const sign = r.owners === 0 ? -1 : Math.sign(Math.log(r.ratio));
+  const size = r.owners === 0 ? 1 : Math.min(Math.abs(Math.log2(r.ratio)) / 3, 1);
+  const even = r.owners > 0 && Math.abs(Math.log(r.ratio)) < Math.log(1.05);
+  const deg = even ? 0 : sign * (4 + 12 * size);
+  const rad = (deg * Math.PI) / 180;
+  const end = (side) => ({ x: cx + side * arm * Math.cos(rad), y: top + side * arm * Math.sin(rad) });
+  const L = end(-1);
+  const R = end(1);
+  const drop = 62; // string length from beam end to pan
+  const pan = (p, color, icon, amount, label) => `
+      <line x1="${p.x - 26}" y1="${p.y + drop}" x2="${p.x}" y2="${p.y}" class="sc-string"/>
+      <line x1="${p.x + 26}" y1="${p.y + drop}" x2="${p.x}" y2="${p.y}" class="sc-string"/>
+      <path d="M${p.x - 34} ${p.y + drop} h68 a34 12 0 0 1 -68 0z" fill="var(${color})" opacity="0.9"/>
+      <circle cx="${p.x}" cy="${p.y + drop - 22}" r="20" fill="var(--surface)" stroke="var(${color})" stroke-width="2"/>
+      <g transform="translate(${p.x - 13} ${p.y + drop - 35})" style="color:var(${color})">${icon}</g>
+      <text x="${p.x}" y="${p.y + drop + 34}" class="sc-amt">${amount}</text>
+      <text x="${p.x}" y="${p.y + drop + 52}" class="sc-label">${label}</text>`;
+  // The badge sits over the pivot and says who got more; the tilt shows which way.
+  const badgeText = even
+    ? 'About even'
+    : r.owners === 0
+      ? 'All to workers'
+      : `${sign > 0 ? 'Owners' : 'Workers'} get ${times(Math.max(r.ratio, 1 / r.ratio))}× more`;
+  const bw = badgeText.length * 8.2 + 24;
+  const badge = `<g class="sc-badge"><rect x="${cx - bw / 2}" y="4" width="${bw}" height="28" rx="14"/><text x="${cx}" y="23">${badgeText}</text></g>`;
+  const H = Math.max(L.y, R.y) + drop + 60;
+  return `
+      <svg class="sc" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(says)}">
+        <path d="M${cx - 40} ${H - 6} h80" class="sc-post"/>
+        <line x1="${cx}" y1="${top}" x2="${cx}" y2="${H - 6}" class="sc-post"/>
+        <line x1="${L.x}" y1="${L.y}" x2="${R.x}" y2="${R.y}" class="sc-beam"/>
+        <circle cx="${cx}" cy="${top}" r="6" class="sc-pivot"/>
+        ${pan(L, '--s4', ICONS.workers, per100(r.workers), `Workers${est}`)}
+        ${pan(R, '--s5', ICONS.owners, per100(r.owners), 'Owners')}
+        ${badge}
+      </svg>`;
 }
 
 /** The CEO pay multiplier: CEO pay as a multiple of the median employee's, from the proxy. */

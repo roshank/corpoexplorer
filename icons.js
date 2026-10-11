@@ -28,4 +28,6 @@ export const ICONS = {
   ceo: svg(
     '<circle cx="12" cy="7" r="3.5"/><path d="M5 21a7 7 0 0 1 14 0"/><path d="M12 14l-1.2 2.2L12 21l1.2-4.8z"/>',
   ),
+  // A balance scale: workers on one side, owners on the other.
+  balance: svg('<path d="M12 4v16M7 20h10M5 7h14"/><path d="M5 7l-3 6a3 3 0 0 0 6 0z"/><path d="M19 7l-3 6a3 3 0 0 0 6 0z"/>'),
 };

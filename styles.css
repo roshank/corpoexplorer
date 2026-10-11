@@ -635,6 +635,93 @@ h3.first {
   }
 }
 
+/* Workers vs owners: its own highlighted section, between Owners' profit and the wider economy. */
+.vs {
+  margin: 14px 0 10px;
+  padding: 16px 18px 14px;
+  border-radius: 14px;
+  background: linear-gradient(120deg, color-mix(in srgb, var(--s4) 16%, var(--surface)), color-mix(in srgb, var(--s5) 18%, var(--surface)));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--s5) 35%, transparent);
+}
+.vs-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.vs-head span {
+  letter-spacing: 0;
+  text-transform: none;
+  font-weight: 500;
+  color: var(--muted);
+  font-size: 13px;
+}
+.vs-says {
+  margin: 4px 0 0;
+  font-size: 16px;
+  color: var(--ink);
+}
+/* The balance scale. */
+.sc {
+  display: block;
+  width: 100%;
+  max-width: 400px;
+  margin: 6px auto 0;
+  overflow: visible;
+}
+.sc-post {
+  stroke: var(--ink-2);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+.sc-beam {
+  stroke: var(--ink);
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+.sc-pivot {
+  fill: var(--ink);
+}
+.sc-string {
+  stroke: var(--muted);
+  stroke-width: 1.5;
+}
+.sc-amt {
+  text-anchor: middle;
+  font-size: 17px;
+  font-weight: 700;
+  fill: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.sc-label {
+  text-anchor: middle;
+  font-size: 13px;
+  fill: var(--ink-2);
+}
+.sc-badge rect {
+  fill: var(--ink);
+}
+.sc-badge text {
+  text-anchor: middle;
+  font-size: 14px;
+  font-weight: 700;
+  fill: var(--surface);
+}
+.vs-note {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.vs + .who-group {
+  margin-top: 0;
+}
+
 .gov-line {
   display: block;
   margin-top: 12px;

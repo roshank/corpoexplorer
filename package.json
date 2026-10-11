@@ -9,6 +9,7 @@
     "build": "node scripts/build-data.js",
     "preview": "node scripts/preview.js",
     "stamp": "node scripts/stamp.js",
+    "coverage": "node scripts/coverage.js",
     "test": "node --test test/*.test.js",
     "smoke": "node scripts/smoke.js"
   }

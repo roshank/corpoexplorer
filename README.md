@@ -10,7 +10,8 @@ SEC's filing archive doesn't allow browsers on other sites to load it (no CORS h
 
 - `data/companies.json` lists every ticker we cover.
 - `data/c/<CIK>.json` holds one company's numbers (~3KB each).
-- For now we cover the 50 largest companies by market cap that file a US 10-K, taken in SEC's ticker-list order, which is roughly by market cap, plus the companies in `ALWAYS_INCLUDE` in `scripts/build-data.js` (IBM). Change `--target` in the workflow to cover more.
+- We cover the S&P 500. The SEC doesn't publish index membership, so the build reads Wikipedia's [list of S&P 500 companies](https://en.wikipedia.org/wiki/List_of_S%26P_500_companies), which has each company's SEC ID (CIK) and sector (`lib/sp500.js`). It's saved to `data/sp500.json`, and that copy is used if Wikipedia can't be reached or its table looks wrong (not ~503 rows).
+- `data/coverage.md` shows which parts of the page each company has, by sector, plus unusual results worth checking. It's regenerated after every build (`scripts/coverage.js`).
 
 ### Keeping it fresh
 
@@ -35,6 +36,7 @@ Requires Node 20+. There are no dependencies to install.
 | --- | --- |
 | `npm run preview` | Serve the site at http://localhost:3000, the same way Pages does |
 | `SEC_USER_AGENT="Name email" npm run build` | Rebuild `data/` from SEC (add `-- --only AAPL,MSFT` for a few companies) |
+| `npm run coverage` | Regenerate `data/coverage.md` from `data/` |
 | `npm run stamp` | Update the version stamps in `index.html` (`npm test` checks them) |
 | `npm test` | Run the unit tests (offline) |
 | `SEC_USER_AGENT="Name email" npm run smoke [TICKERS…]` | Print live results from SEC for a few companies |
@@ -101,7 +103,7 @@ lib/workforce.js   Headcount (10-K text) and median employee pay (proxy statemen
 
 - Worker pay is an estimate for most companies and is on the low side. Headcount and median pay are read from filing text, so a company that phrases them unusually may be missing them (Chevron's headcount, Lilly's and Bank of America's median pay today); its pay then stays inside Other businesses.
 
-- Only the 50 largest companies (plus IBM) are included, and the data is refreshed weekly.
+- Only S&P 500 companies are included, and the data is refreshed weekly. Some parts of the page are missing for some companies, mostly insurers, real-estate trusts and utilities; see `data/coverage.md`.
 - Only US filers that file a 10-K. Foreign companies that file 20-F (e.g. TSMC, Toyota) aren't supported yet.
 - Banks and insurers report revenue differently, so their breakdowns are thinner.
 - Some companies don't tag their revenue tables in a way we can reconcile, so some views may be missing for them.
