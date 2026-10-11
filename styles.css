@@ -586,13 +586,20 @@ h3.first {
   margin-top: 20px;
 }
 /* People / the economy / owners: a heading with the group's total, and a firm line between groups. */
-.whogets .topline-bar {
-  margin-bottom: 16px;
+.topline-scale {
+  display: flex;
+  justify-content: space-between;
+  margin: 4px 0 28px;
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.who-group {
+  padding-top: 14px;
+  border-top: 2px solid var(--ink-2);
 }
 .who-group + .who-group {
   margin-top: 10px;
-  padding-top: 14px;
-  border-top: 2px solid var(--ink-2);
 }
 .who-group-head {
   display: flex;
