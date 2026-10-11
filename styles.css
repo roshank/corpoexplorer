@@ -598,11 +598,16 @@ h3.first {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  margin: 0 0 4px;
+  margin: 0 0 2px;
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  color: var(--muted);
+}
+.who-group-note {
+  margin: 0 0 6px;
+  font-size: 14px;
   color: var(--muted);
 }
 .who-group-total {
