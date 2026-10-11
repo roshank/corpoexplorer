@@ -9,7 +9,7 @@
 | Where it comes from | 465 | 95% |
 | Where it goes | 488 | 100% |
 | Itemized costs | 461 | 94% |
-| Workers | 404 | 83% |
+| Workers | 401 | 82% |
 | CEO pay multiplier | 406 | 83% |
 | US vs abroad taxes | 316 | 65% |
 
@@ -18,25 +18,24 @@
 | Sector | Companies | Where it comes from | Where it goes | Itemized costs | Workers | CEO pay multiplier | US vs abroad taxes |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | Communication Services | 18 | 94% | 100% | 94% | 83% | 83% | 72% |
-| Consumer Discretionary | 47 | 91% | 100% | 91% | 77% | 83% | 53% |
+| Consumer Discretionary | 47 | 91% | 100% | 91% | 74% | 83% | 53% |
 | Consumer Staples | 33 | 97% | 100% | 97% | 79% | 82% | 88% |
-| Energy | 19 | 95% | 100% | 89% | 84% | 68% | 53% |
+| Energy | 19 | 95% | 100% | 89% | 74% | 68% | 53% |
 | Financials | 72 | 99% | 100% | 90% | 86% | 76% | 72% |
 | Health Care | 60 | 100% | 100% | 100% | 80% | 87% | 73% |
 | Industrials | 81 | 99% | 100% | 96% | 83% | 80% | 78% |
-| Information Technology | 75 | 100% | 100% | 100% | 88% | 89% | 71% |
+| Information Technology | 75 | 100% | 100% | 100% | 89% | 89% | 71% |
 | Materials | 24 | 100% | 100% | 100% | 88% | 79% | 54% |
 | Real Estate | 29 | 66% | 100% | 83% | 79% | 86% | 38% |
-| Utilities | 30 | 87% | 100% | 87% | 80% | 97% | 10% |
+| Utilities | 30 | 87% | 100% | 87% | 77% | 97% | 10% |
 
-## Worth a look (78)
+## Worth a look (77)
 
 Unusual results. Often the filing was read wrong, but some are real (a net tax benefit, a very profitable year).
 
 | Ticker | Company | Why |
 | --- | --- | --- |
 | ACGL | ARCH CAPITAL GROUP LTD. | one cost line |
-| ADI | Analog Devices, Inc. | workers estimate implausible |
 | AES | THE AES CORPORATION | tax rate -241.3% |
 | AMCR | AMCOR PLC | tax rate 489.2% |
 | AMD | ADVANCED MICRO DEVICES, INC. | tax rate -2.5% |
@@ -121,9 +120,8 @@ Unusual results. Often the filing was read wrong, but some are real (a net tax b
 | ABNB | Consumer Discretionary | Workers, CEO pay multiplier |
 | ACGL | Financials | Itemized costs, Workers, CEO pay multiplier, US vs abroad taxes |
 | ACN | Information Technology | US vs abroad taxes |
-| ADI | Information Technology | Workers |
 | ADM | Consumer Staples | Workers, US vs abroad taxes |
-| AEE | Utilities | US vs abroad taxes |
+| AEE | Utilities | Workers, US vs abroad taxes |
 | AEP | Utilities | US vs abroad taxes |
 | AES | Utilities | Workers, US vs abroad taxes |
 | AFL | Financials | US vs abroad taxes |
@@ -217,8 +215,8 @@ Unusual results. Often the filing was read wrong, but some are real (a net tax b
 | EXE | Energy | US vs abroad taxes |
 | EXPE | Consumer Discretionary | Workers, CEO pay multiplier |
 | EXR | Real Estate | US vs abroad taxes |
-| F | Consumer Discretionary | US vs abroad taxes |
-| FANG | Energy | US vs abroad taxes |
+| F | Consumer Discretionary | Workers, US vs abroad taxes |
+| FANG | Energy | Workers, US vs abroad taxes |
 | FDS | Financials | Workers |
 | FDXF | Industrials | CEO pay multiplier |
 | FE | Utilities | US vs abroad taxes |
@@ -265,6 +263,7 @@ Unusual results. Often the filing was read wrong, but some are real (a net tax b
 | KHC | Consumer Staples | Workers, CEO pay multiplier, US vs abroad taxes |
 | KIM | Real Estate | Where it comes from, CEO pay multiplier, US vs abroad taxes |
 | KKR | Financials | Itemized costs, Workers, CEO pay multiplier |
+| KMI | Energy | Workers |
 | L | Financials | Workers, CEO pay multiplier |
 | LEN | Consumer Discretionary | Workers, CEO pay multiplier, US vs abroad taxes |
 | LH | Health Care | Workers |
