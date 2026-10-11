@@ -182,8 +182,8 @@ function renderCompany(d) {
       }
     </div>
 
-    <p class="source">Source: <a href="${esc(d.filingUrl)}" target="_blank" rel="noopener">${esc(name)} Form 10-K</a>,
-      filed ${longDate(d.filingDate)}. Figures are as reported in the filing's machine-readable data.</p>`;
+    <p class="source" id="sources" tabindex="-1">Source: <a href="${esc(d.filingUrl)}" target="_blank" rel="noopener">${esc(name)} Form 10-K</a>,
+      filed ${longDate(d.filingDate)}. Figures are as reported in the filing's machine-readable data.${workerNote(d)}</p>`;
 
   if (d.views.length) {
     const tabs = result.querySelector('.tabs');
@@ -229,6 +229,15 @@ try {
   showDetails = localStorage.getItem('showDetails') === '1';
 } catch {}
 
+/** How the workers figure is estimated, for the sources note, when it is an estimate. */
+function workerNote(d) {
+  if (whoGets(d)?.workers?.source !== 'estimate') return '';
+  const f = d.workforce.payFiling;
+  const doc = f ? `<a href="${esc(f.url)}" target="_blank" rel="noopener">${f.form === 'DEF 14A' ? 'proxy statement' : '10-K amendment'}</a>` : 'proxy statement';
+  return ` Pay to workers is an estimate: the number of employees in the 10-K times the median employee’s pay from the company’s ${doc},
+      including stock at its value when granted. The real total is likely higher, since average pay is above the median.`;
+}
+
 /** Who gets the $100: other businesses, workers, governments, owners, and the company itself. */
 function renderWhoGets(d, short) {
   const w = whoGets(d);
@@ -267,14 +276,13 @@ function renderWhoGets(d, short) {
     workers && {
       key: 'workers',
       color: '--s4',
-      label: workers.source === 'estimate' ? 'Workers (at least)' : 'Workers',
+      label: 'Workers',
       value: workers.per100,
       sub:
         workers.source === 'estimate'
           ? `About ${Math.round(workers.employees).toLocaleString('en-US')} employees × ${money(workers.medianPay)} median pay${
               workers.payYear ? ` (${workers.payYear})` : ''
-            },
-             including stock at its value when granted. The real total is likely higher, since the average is above the median.`
+            }. <a href="#sources">How we estimate this ↓</a>`
           : 'Pay and benefits, as reported in the filing.',
     },
     {
