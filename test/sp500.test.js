@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseSp500 } from '../lib/sp500.js';
+import { companyName, parseSp500 } from '../lib/sp500.js';
 import { flags } from '../scripts/coverage.js';
 
 // A constituents table in Wikipedia's shape, with `n` filler rows after the real ones.
@@ -35,4 +35,13 @@ test('coverage flags results that usually mean a misread filing', () => {
     ['not itemized $8.00', 'profit $77.00 per $100', 'tax rate -5%'],
   );
   assert.deepEqual(flags({}), ['no costs read']);
+});
+
+test('companyName uses the index name when SEC\'s is in capitals or has a state code', () => {
+  assert.equal(companyName('PROGRESSIVE CORP/OH/', 'Progressive Corporation'), 'Progressive Corporation');
+  assert.equal(companyName('CVS HEALTH Corp', 'CVS Health'), 'CVS Health');
+  assert.equal(companyName('Apple Inc.', 'Apple Inc.'), 'Apple Inc.');
+  assert.equal(companyName('JPMorgan Chase & Co', 'JPMorgan Chase'), 'JPMorgan Chase & Co');
+  assert.equal(companyName('ALPHABET INC.', 'Alphabet Inc. (Class A)'), 'Alphabet Inc.');
+  assert.equal(companyName('IBM', 'IBM'), 'IBM');
 });

@@ -11,7 +11,7 @@ import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { companyFromFiling, getTickers, latestAnnualReport } from '../lib/sec.js';
 import { getFederalAwards } from '../lib/usaspending.js';
-import { fetchSp500 } from '../lib/sp500.js';
+import { companyName, fetchSp500 } from '../lib/sp500.js';
 import { stamp } from './stamp.js';
 import { coverage } from './coverage.js';
 import { writeSectorStats } from './sectors.js';
@@ -48,6 +48,7 @@ try {
   console.log(`  warn  Using the saved S&P 500 list: ${err.message}`);
 }
 const sectorOf = new Map(sp500.map((c) => [c.cik, c.sector]));
+const indexName = new Map([...sp500].reverse().map((c) => [c.cik, c.name]));
 
 // One entry per company, with all its share classes (GOOGL/GOOG, FOXA/FOX) from SEC's ticker
 // list, in SEC's order (roughly largest first).
@@ -98,6 +99,7 @@ for (const co of queue) {
     } catch (err) {
       console.log(`  warn  ${tag}: USAspending: ${err.message}`);
     }
+    data.name = companyName(data.name, indexName.get(co.cik));
     if (JSON.stringify(data) !== JSON.stringify(old)) await writeFile(file, JSON.stringify(data));
     built.push({ co, name: data.name });
   } catch (err) {
