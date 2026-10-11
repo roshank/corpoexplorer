@@ -31,7 +31,12 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
 // [ticker, name, cik] for every company we have data for, built ahead of time from SEC filings.
 let tickers = [];
 let companyCount = 51;
-const ready = fetch('data/companies.json')
+// The data's fingerprint (written into index.html by scripts/stamp.js), so a browser fetches
+// fresh data right after it changes instead of reusing a cached copy.
+const DATA_VERSION = document.querySelector('meta[name="data-version"]')?.content;
+const dataUrl = (path) => (DATA_VERSION ? `${path}?v=${DATA_VERSION}` : path);
+
+const ready = fetch(dataUrl('data/companies.json'))
   .then((r) => (r.ok ? r.json() : { companies: [] }))
   .then((d) => {
     tickers = d.companies;
@@ -134,7 +139,7 @@ async function load(ticker) {
           : "Couldn't load the company list. Try reloading the page.",
       );
     }
-    const res = await fetch(`data/c/${entry[2]}.json`);
+    const res = await fetch(dataUrl(`data/c/${entry[2]}.json`));
     if (id !== requestId) return;
     if (!res.ok) throw new Error("Couldn't load this company's data. Try reloading the page.");
     const data = await res.json();
