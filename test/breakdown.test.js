@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseInstance, parseLabels, humanize } from '../lib/xbrl.js';
-import { buildBreakdowns, bestSubset, toCents } from '../lib/breakdown.js';
+import { combineSplitYear, parseInstance, parseLabels, humanize } from '../lib/xbrl.js';
+import { buildBreakdowns, bestSubset, isFullYear, toCents } from '../lib/breakdown.js';
 
 // A tiny instance modeled on real filings: overlapping product tags (Apple-style),
 // products nested inside a segment (Google-style), and an eliminations row to ignore.
@@ -154,4 +154,209 @@ test('toCents always sums to exactly $100', () => {
     const cents = toCents(shares);
     assert.equal(Math.round(cents.reduce((a, b) => a + b, 0) * 100), 10000, shares.join());
   }
+});
+
+const C2 = 'srt:MajorCustomersAxis';
+const E = 'dei:LegalEntityAxis';
+const xml = (body) => `<x>${body}</x>`;
+
+test('a bank without a revenue total earns net interest income plus noninterest income', () => {
+  const res = buildBreakdowns(
+    parseInstance(
+      xml(`${ctx('t')}${ctx('card', [[P, 'us-gaap:CreditCardMember']])}${ctx('trust', [[P, 'us-gaap:FiduciaryAndTrustMember']])}
+      ${ctx('a', [[S, 'ex:ConsumerMember']])}${ctx('b', [[S, 'ex:WholesaleMember']])}
+      ${fact('InterestIncomeExpenseNet', 't', 700)}${fact('NoninterestIncome', 't', 300)}
+      ${fact('NoninterestIncome', 'card', 180)}${fact('NoninterestIncome', 'trust', 120)}
+      ${fact('InterestIncomeExpenseNet', 'a', 400)}${fact('InterestIncomeExpenseNet', 'b', 300)}
+      ${fact('NoninterestIncome', 'a', 100)}${fact('NoninterestIncome', 'b', 200)}`),
+    ),
+    {},
+    '2024-12-31',
+  );
+  assert.equal(res.total.value, 1000);
+  assert.deepEqual(res.total.parts, ['us-gaap:InterestIncomeExpenseNet', 'us-gaap:NoninterestIncome']);
+  const product = res.views.find((v) => v.key === 'product');
+  assert.deepEqual(
+    product.items.map((i) => [i.label, i.per100]),
+    [
+      ['Net interest income', 70],
+      ['Credit Card', 18],
+      ['Fiduciary And Trust', 12],
+    ],
+  );
+  const segment = res.views.find((v) => v.key === 'segment');
+  assert.deepEqual(
+    segment.items.map((i) => [i.label, i.per100]),
+    [
+      ['Consumer', 50],
+      ['Wholesale', 50],
+    ],
+  );
+});
+
+test("a bank's fee-only contract revenue gives way to its whole revenue", () => {
+  const res = buildBreakdowns(
+    parseInstance(xml(`${ctx('t')}${fact(R, 't', 150)}${fact('InterestIncomeExpenseNet', 't', 700)}${fact('NoninterestIncome', 't', 300)}`)),
+    {},
+    '2024-12-31',
+  );
+  assert.equal(res.total.value, 1000);
+  assert.deepEqual(res.views[0].items.map((i) => i.label), ['Net interest income', 'Fees & other income']);
+});
+
+test('with no total, revenue is products plus services, or a member that sums the others', () => {
+  const goods = buildBreakdowns(
+    parseInstance(xml(`${ctx('p', [[P, 'us-gaap:ProductMember']])}${ctx('s', [[P, 'us-gaap:ServiceMember']])}${fact(R, 'p', 700)}${fact(R, 's', 300)}`)),
+    {},
+    '2024-12-31',
+  );
+  assert.equal(goods.total.value, 1000);
+  const oil = buildBreakdowns(
+    parseInstance(
+      xml(`${ctx('all', [[P, 'ex:OilAndGasMember']])}${ctx('own', [[P, 'ex:ProducedMember']])}${ctx('bought', [[P, 'ex:PurchasedMember']])}
+      ${fact('Revenues', 'all', 900)}${fact('Revenues', 'own', 700)}${fact('Revenues', 'bought', 200)}`),
+    ),
+    {},
+    '2024-12-31',
+  );
+  assert.equal(oil.total.value, 900);
+  assert.deepEqual(oil.views[0].items.map((i) => i.label), ['Produced', 'Purchased']);
+});
+
+test("a utility's operating revenue outranks its contract revenue; a REIT's rent counts", () => {
+  const utility = buildBreakdowns(
+    parseInstance(xml(`${ctx('t')}${fact(R, 't', 900)}${fact('RegulatedAndUnregulatedOperatingRevenue', 't', 1000)}`)),
+    {},
+    '2024-12-31',
+  );
+  assert.equal(utility.total.value, 1000);
+  const rentOnly = buildBreakdowns(parseInstance(xml(`${ctx('t')}${fact('OperatingLeaseLeaseIncome', 't', 500)}`)), {}, '2024-12-31');
+  assert.equal(rentOnly.total.value, 500);
+  // Contract revenue that is only the management fees, next to much more rent.
+  const fees = buildBreakdowns(parseInstance(xml(`${ctx('t')}${fact(R, 't', 20)}${fact('OperatingLeaseLeaseIncome', 't', 980)}`)), {}, '2024-12-31');
+  assert.equal(fees.total.value, 1000);
+});
+
+test("slices split by a second axis are added up (each segment's US and foreign sales)", () => {
+  const res = buildBreakdowns(
+    parseInstance(
+      xml(`${ctx('t')}
+      ${ctx('up-us', [[S, 'ex:UpstreamMember'], [G, 'country:US']])}${ctx('up-intl', [[S, 'ex:UpstreamMember'], [G, 'us-gaap:NonUsMember']])}
+      ${ctx('down-us', [[S, 'ex:DownstreamMember'], [G, 'country:US']])}${ctx('down-intl', [[S, 'ex:DownstreamMember'], [G, 'us-gaap:NonUsMember']])}
+      ${fact('Revenues', 't', 1000)}${fact('Revenues', 'up-us', 100)}${fact('Revenues', 'up-intl', 200)}${fact('Revenues', 'down-us', 300)}${fact('Revenues', 'down-intl', 400)}`),
+    ),
+    {},
+    '2024-12-31',
+  );
+  const items = (key) => res.views.find((v) => v.key === key).items.map((i) => [i.label, i.per100]);
+  assert.deepEqual(items('segment'), [
+    ['Downstream', 70],
+    ['Upstream', 30],
+  ]);
+  assert.deepEqual(items('geography'), [
+    ['Non Us', 60],
+    ['United States', 40],
+  ]);
+});
+
+test("one subsidiary's breakdown stands for the company's; two subsidiaries' clashing figures don't", () => {
+  const res = buildBreakdowns(
+    parseInstance(
+      xml(`${ctx('t')}
+      ${ctx('res', [[C2, 'ex:ResidentialMember'], [E, 'ex:UtilityMember']])}${ctx('com', [[C2, 'ex:CommercialMember'], [E, 'ex:UtilityMember']])}
+      ${ctx('gas1', [[P, 'ex:GasMember'], [E, 'ex:UtilityMember']])}${ctx('gas2', [[P, 'ex:GasMember'], [E, 'ex:OtherUtilityMember']])}
+      ${ctx('el', [[P, 'ex:ElectricMember']])}
+      ${fact('Revenues', 't', 1000)}${fact(R, 'res', 600)}${fact(R, 'com', 400)}${fact(R, 'gas1', 400)}${fact(R, 'gas2', 300)}${fact(R, 'el', 600)}`),
+    ),
+    {},
+    '2024-12-31',
+  );
+  assert.deepEqual(res.views.map((v) => v.key), ['customers']);
+  assert.deepEqual(
+    res.views[0].items.map((i) => [i.label, i.per100]),
+    [
+      ['Residential', 60],
+      ['Commercial', 40],
+    ],
+  );
+});
+
+test('customer classes that sum other classes are not counted next to them', () => {
+  const res = buildBreakdowns(
+    parseInstance(
+      xml(`${ctx('t')}${ctx('all', [[C2, 'ex:TotalRetailMember']])}${ctx('home', [[C2, 'ex:ResidentialMember']])}
+      ${ctx('biz', [[C2, 'ex:IndustrialMember']])}${ctx('grid', [[C2, 'ex:TransmissionMember']])}
+      ${fact('Revenues', 't', 1000)}${fact(R, 'all', 800)}${fact(R, 'home', 500)}${fact(R, 'biz', 300)}${fact(R, 'grid', 195)}`),
+    ),
+    {},
+    '2024-12-31',
+  );
+  assert.deepEqual(res.views[0].items.map((i) => i.label), ['Residential', 'Industrial', 'Transmission']);
+});
+
+test('shares of sales given as percentages become amounts', () => {
+  const B = 'us-gaap:ConcentrationRiskByBenchmarkAxis';
+  const T = 'us-gaap:ConcentrationRiskByTypeAxis';
+  const pct = (id, member) => ctx(id, [[P, member], [B, 'us-gaap:SalesRevenueNetMember'], [T, 'us-gaap:ProductConcentrationRiskMember']]);
+  const res = buildBreakdowns(
+    parseInstance(
+      xml(`${ctx('t')}${pct('a', 'ex:LadiesMember')}${pct('b', 'ex:HomeMember')}${pct('c', 'ex:ShoesMember')}${fact('Revenues', 't', 2000)}
+      ${fact('ConcentrationRiskPercentage1', 'a', 0.5)}${fact('ConcentrationRiskPercentage1', 'b', 0.3)}${fact('ConcentrationRiskPercentage1', 'c', 0.2)}`),
+    ),
+    {},
+    '2024-12-31',
+  );
+  assert.deepEqual(
+    res.views[0].items.map((i) => [i.label, i.value, i.per100]),
+    [
+      ['Ladies', 1000, 50],
+      ['Home', 600, 30],
+      ['Shoes', 400, 20],
+    ],
+  );
+});
+
+test('failing a products view, the revenue lines on the income statement are used', () => {
+  const statement = ['us-gaap:RevenuesAbstract', 'ex:SiteRentalRevenues', `us-gaap:${R}`, 'us-gaap:Revenues', 'us-gaap:CostsAndExpenses'];
+  const res = buildBreakdowns(
+    parseInstance(
+      xml(`${ctx('t')}${fact('Revenues', 't', 1000)}${fact(R, 't', 50)}${fact('CostsAndExpenses', 't', 600)}
+      <ex:SiteRentalRevenues contextRef="t" unitRef="usd">950</ex:SiteRentalRevenues>`),
+    ),
+    { 'ex:SiteRentalRevenues': 'Site rental revenues', [`us-gaap:${R}`]: 'Revenue from Contract with Customer' },
+    '2024-12-31',
+    statement,
+  );
+  assert.deepEqual(
+    res.views[0].items.map((i) => [i.label, i.per100]),
+    [
+      ['Site rental revenues', 95],
+      ['Other revenue', 5],
+    ],
+  );
+});
+
+test('a year reported in two pieces around a merger is added up', () => {
+  const inst = combineSplitYear(
+    parseInstance(
+      xml(`${ctx('before', [], '2025-01-01', '2025-08-06')}${ctx('after', [], '2025-08-08', '2025-12-31')}${ctx('q4', [], '2025-10-01', '2025-12-31')}
+      ${ctx('before-ads', [[P, 'ex:AdsMember']], '2025-01-01', '2025-08-06')}${ctx('after-ads', [[P, 'ex:AdsMember']], '2025-08-08', '2025-12-31')}
+      ${fact(R, 'before', 600)}${fact(R, 'after', 500)}${fact(R, 'q4', 300)}${fact('NetIncomeLoss', 'before', -10)}${fact('NetIncomeLoss', 'after', -20)}
+      ${fact(R, 'before-ads', 200)}${fact(R, 'after-ads', 150)}`),
+    ),
+    '2025-12-31',
+  );
+  assert.equal(buildBreakdowns(inst, {}, '2025-12-31').total.value, 1100);
+  const year = inst.facts.filter((f) => isFullYear(inst.contexts[f.contextRef]));
+  assert.deepEqual(
+    year.map((f) => [f.name, f.value]),
+    [
+      [R, 1100],
+      ['NetIncomeLoss', -30],
+      [R, 350],
+    ],
+  );
+  // A filing with full-year figures is left alone.
+  const normal = parseInstance(instanceXml);
+  assert.equal(combineSplitYear(normal, '2024-12-31'), normal);
 });

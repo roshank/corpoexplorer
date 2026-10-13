@@ -158,3 +158,37 @@ test('costs reported only as products + services are added up, and gaps get thei
     ],
   );
 });
+
+test("a bank's provision for loan losses counts as a cost though it sits between its two kinds of revenue", () => {
+  const inst = parseInstance(`<x>${ctx('fy')}
+    ${fact('us-gaap:InterestAndDividendIncomeOperating', 1200)}${fact('us-gaap:InterestExpense', 500)}
+    ${fact('us-gaap:InterestIncomeExpenseNet', 700)}${fact('us-gaap:ProvisionForLoanLeaseAndOtherLosses', 50)}
+    ${fact('us-gaap:InterestIncomeExpenseAfterProvisionForLoanLoss', 650)}${fact('us-gaap:FeesAndCommissions', 300)}
+    ${fact('us-gaap:NoninterestIncome', 300)}${fact('us-gaap:LaborAndRelatedExpense', 500)}
+    ${fact('us-gaap:IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest', 450)}
+    ${fact('us-gaap:IncomeTaxExpenseBenefit', 100)}${fact('us-gaap:NetIncomeLoss', 350)}</x>`);
+  const pres = parsePresentation(`<l>${presentation([
+    'us-gaap:IncomeStatementAbstract',
+    'us-gaap:InterestAndDividendIncomeOperating',
+    'us-gaap:InterestExpense',
+    'us-gaap:InterestIncomeExpenseNet',
+    'us-gaap:ProvisionForLoanLeaseAndOtherLosses',
+    'us-gaap:InterestIncomeExpenseAfterProvisionForLoanLoss',
+    'us-gaap:FeesAndCommissions',
+    'us-gaap:NoninterestIncome',
+    'us-gaap:LaborAndRelatedExpense',
+    'us-gaap:IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest',
+    'us-gaap:IncomeTaxExpenseBenefit',
+    'us-gaap:NetIncomeLoss',
+  ])}</l>`);
+  const s = buildSpending(inst, pres, {}, '2024-12-31', 1000, ['us-gaap:InterestIncomeExpenseNet', 'us-gaap:NoninterestIncome']);
+  assert.deepEqual(
+    s.rows.map((r) => [r.label, r.per100]),
+    [
+      ['Employee pay & benefits', 50],
+      ['Set aside for loans that may not be repaid', 5],
+      ['Income taxes', 10],
+      ['Kept as profit', 35],
+    ],
+  );
+});
