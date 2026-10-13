@@ -17,7 +17,7 @@ import { coverage } from './coverage.js';
 import { writeSectorStats } from './sectors.js';
 
 // Bump when the shape or the logic of the per-company data changes, to force a rebuild.
-const DATA_VERSION = 14;
+const DATA_VERSION = 15;
 
 const DATA = fileURLToPath(new URL('../data/', import.meta.url));
 const COMPANIES = DATA + 'c/';
@@ -97,6 +97,8 @@ for (const co of queue) {
     try {
       data.federal = await getFederalAwards(co.ticker, data.name, data.fiscalYearEnd);
     } catch (err) {
+      // The service is down now and then: keep the last figures rather than none.
+      if (old?.federal) data.federal = old.federal;
       console.log(`  warn  ${tag}: USAspending: ${err.message}`);
     }
     data.name = companyName(data.name, indexName.get(co.cik));

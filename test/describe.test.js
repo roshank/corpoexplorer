@@ -37,3 +37,9 @@ test('describeLine ignores generic names and missing lines', () => {
 test('htmlToText drops hidden XBRL facts and page footers', () => {
   assert.doesNotMatch(filing, /hidden facts|Form 10-K \| 24/);
 });
+
+test('htmlToText joins words split across styled runs, but not footnote marks, and drops zero-width spaces', () => {
+  assert.match(htmlToText('<div><span>had approximatel</span><span style="color:#000">y 71,000 e</span><span>mployees</span></div>'), /approximately 71,000 employees/);
+  assert.match(htmlToText('<div><span>ratio is 375:1.</span><span style="top:-2.97pt">4</span></div>'), /375:1\. 4/);
+  assert.equal(htmlToText('<table><tr><td>Median</td><td>&#8203;</td><td>$</td><td>29,017</td></tr></table>').trim(), 'Median ¶ $ ¶ 29,017 ¶');
+});

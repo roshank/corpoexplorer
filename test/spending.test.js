@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseInstance, parsePresentation } from '../lib/xbrl.js';
-import { buildSpending, findIncomeStatement } from '../lib/spending.js';
+import { PLAIN_BY_LABEL, buildSpending, findIncomeStatement } from '../lib/spending.js';
 
 const ctx = (id, start = '2024-01-01', end = '2024-12-31') => `
   <xbrli:context id="${id}"><xbrli:entity><xbrli:identifier scheme="x">1</xbrli:identifier></xbrli:entity>
@@ -157,4 +157,103 @@ test('costs reported only as products + services are added up, and gaps get thei
       ['Kept as profit', 24],
     ],
   );
+});
+
+const dctx = (id, axis, member) => `
+  <xbrli:context id="${id}"><xbrli:entity><xbrli:identifier scheme="x">1</xbrli:identifier>
+    <xbrli:segment><xbrldi:explicitMember dimension="${axis}">${member}</xbrldi:explicitMember></xbrli:segment></xbrli:entity>
+    <xbrli:period><xbrli:startDate>2024-01-01</xbrli:startDate><xbrli:endDate>2024-12-31</xbrli:endDate></xbrli:period>
+  </xbrli:context>`;
+const layout = (concepts) => parsePresentation(`<l>${presentation(concepts)}</l>`);
+const rowsOf = (s) => s.rows.map((r) => [r.label, r.per100]);
+
+test('the tax rate uses total pre-tax income, not its domestic part', () => {
+  const inst = parseInstance(`<x>${ctx('fy')}
+    ${fact('us-gaap:Revenues', 1000)}${fact('us-gaap:OperatingIncomeLoss', 300)}
+    ${fact('us-gaap:IncomeLossFromContinuingOperationsBeforeIncomeTaxesDomestic', 50)}
+    ${fact('us-gaap:IncomeLossFromContinuingOperationsBeforeIncomeTaxesForeign', 250)}
+    ${fact('us-gaap:IncomeTaxExpenseBenefit', 60)}${fact('us-gaap:NetIncomeLoss', 240)}</x>`);
+  assert.equal(buildSpending(inst, [], {}, '2024-12-31', 1000).taxes.rate, 20);
+  // With no foreign income, the domestic figure is the total (homebuilders).
+  const home = parseInstance(`<x>${ctx('fy')}
+    ${fact('us-gaap:Revenues', 1000)}${fact('us-gaap:IncomeLossFromContinuingOperationsBeforeIncomeTaxesDomestic', 300)}
+    ${fact('us-gaap:IncomeTaxExpenseBenefit', 60)}${fact('us-gaap:NetIncomeLoss', 240)}</x>`);
+  assert.equal(buildSpending(home, [], {}, '2024-12-31', 1000).taxes.rate, 20);
+});
+
+test("a filer's own pre-tax line ends the costs, and lines tagged only per column are added up", () => {
+  const inst = parseInstance(`<x>${ctx('fy')}${dctx('a', 'ex:GroupAxis', 'ex:AutoMember')}${dctx('f', 'ex:GroupAxis', 'ex:FinanceMember')}
+    ${fact('us-gaap:Revenues', 1000)}
+    ${fact('us-gaap:CostOfGoodsAndServicesSold', 600, 'a')}
+    ${fact('us-gaap:OperatingCostsAndExpenses', 150, 'f')}
+    ${fact('us-gaap:InterestIncomeExpenseNonoperatingNet', -50)}
+    ${fact('us-gaap:IncomeLossFromEquityMethodInvestments', 30)}
+    ${fact('ex:EarningsBeforeIncomeTaxes', 230)}
+    ${fact('us-gaap:IncomeTaxExpenseBenefit', 30)}${fact('us-gaap:NetIncomeLoss', 200)}</x>`);
+  const pres = layout([
+    'us-gaap:IncomeStatementAbstract', 'ex:GroupAxis', 'ex:AutoMember', 'ex:FinanceMember',
+    'us-gaap:Revenues', 'us-gaap:CostOfGoodsAndServicesSold', 'us-gaap:OperatingCostsAndExpenses',
+    'us-gaap:InterestIncomeExpenseNonoperatingNet', 'us-gaap:IncomeLossFromEquityMethodInvestments',
+    'ex:EarningsBeforeIncomeTaxes', 'us-gaap:IncomeTaxExpenseBenefit', 'us-gaap:NetIncomeLoss',
+  ]);
+  const s = buildSpending(inst, pres, { 'us-gaap:OperatingCostsAndExpenses': 'Finance expenses', 'us-gaap:InterestIncomeExpenseNonoperatingNet': 'Interest, net' }, '2024-12-31', 1000);
+  assert.deepEqual(rowsOf(s), [
+    ['Making & delivering what they sell', 60],
+    ['Finance expenses', 15],
+    ['Interest, net', 5],
+    ['Other income', -3],
+    ['Income taxes', 3],
+    ['Kept as profit', 20],
+  ]);
+  assert.equal(s.taxes.rate, 13);
+});
+
+test('without a pre-tax line (REITs), the costs run down to net income', () => {
+  const inst = parseInstance(`<x>${ctx('fy')}
+    ${fact('us-gaap:Revenues', 1000)}${fact('us-gaap:DirectCostsOfLeasedAndRentedPropertyOrEquipment', 400)}
+    ${fact('us-gaap:DepreciationAndAmortization', 300)}${fact('us-gaap:GainLossOnSaleOfProperties', 100)}
+    ${fact('us-gaap:ProfitLoss', 400)}${fact('us-gaap:NetIncomeLoss', 400)}</x>`);
+  const pres = layout([
+    'us-gaap:IncomeStatementAbstract', 'us-gaap:Revenues', 'us-gaap:DirectCostsOfLeasedAndRentedPropertyOrEquipment',
+    'us-gaap:DepreciationAndAmortization', 'us-gaap:GainLossOnSaleOfProperties', 'us-gaap:ProfitLoss', 'us-gaap:NetIncomeLoss',
+  ]);
+  const s = buildSpending(inst, pres, { 'us-gaap:GainLossOnSaleOfProperties': 'Gain on sale', 'us-gaap:DirectCostsOfLeasedAndRentedPropertyOrEquipment': 'Rental' }, '2024-12-31', 1000);
+  assert.deepEqual(rowsOf(s), [
+    ['Rental', 40],
+    ['Wear and tear on equipment', 30],
+    ['Gain on sale', -10],
+    ['Income taxes', 0],
+    ['Kept as profit', 40],
+  ]);
+});
+
+test("a bank's costs are its provision plus the lines after non-interest income", () => {
+  const inst = parseInstance(`<x>${ctx('fy')}
+    ${fact('us-gaap:InterestAndDividendIncomeOperating', 900)}${fact('us-gaap:InterestExpenseOperating', 300)}
+    ${fact('us-gaap:InterestIncomeExpenseNet', 600)}${fact('us-gaap:ProvisionForLoanLossesExpensed', 50)}
+    ${fact('us-gaap:NoninterestIncome', 400)}${fact('us-gaap:LaborAndRelatedExpense', 350)}${fact('us-gaap:OccupancyNet', 100)}
+    ${fact('us-gaap:NoninterestExpense', 450)}
+    ${fact('us-gaap:IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest', 500)}
+    ${fact('us-gaap:IncomeTaxExpenseBenefit', 100)}${fact('us-gaap:NetIncomeLoss', 400)}</x>`);
+  const pres = layout([
+    'us-gaap:IncomeStatementAbstract', 'us-gaap:InterestAndDividendIncomeOperating', 'us-gaap:InterestExpenseOperating',
+    'us-gaap:InterestIncomeExpenseNet', 'us-gaap:ProvisionForLoanLossesExpensed', 'us-gaap:NoninterestIncome',
+    'us-gaap:LaborAndRelatedExpense', 'us-gaap:OccupancyNet', 'us-gaap:NoninterestExpense',
+    'us-gaap:IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest',
+    'us-gaap:IncomeTaxExpenseBenefit', 'us-gaap:NetIncomeLoss',
+  ]);
+  assert.deepEqual(rowsOf(buildSpending(inst, pres, {}, '2024-12-31', 1000)), [
+    ['Employee pay & benefits', 35],
+    ['Offices & buildings', 10],
+    ['Set aside for loans that may not be repaid', 5],
+    ['Income taxes', 10],
+    ['Kept as profit', 40],
+  ]);
+});
+
+test('a gain or loss on deferred compensation plans is not employee pay', () => {
+  const pay = (label) => PLAIN_BY_LABEL.some(([re, , tag]) => tag === 'employees' && re.test(label));
+  assert.equal(pay('Income (Loss) On Deferred Compensation Plans'), false);
+  assert.equal(pay('Salaries, wages and benefits'), true);
+  assert.equal(pay('Compensation and benefits'), true);
 });

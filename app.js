@@ -476,7 +476,8 @@ function ceoPayRow(d, workers) {
   const w = d.workforce;
   if (!w?.ceoRatio || !w.medianPay) return '';
   const r = w.ceoRatio;
-  const times = r < 10 ? r.toFixed(1) : Math.round(r).toLocaleString('en-US');
+  // A few CEOs take almost nothing (Block's was $2.75): below 0.1× the median, say so.
+  const times = r < 0.1 ? '<0.1' : r < 10 ? r.toFixed(1) : Math.round(r).toLocaleString('en-US');
   // Tesla's 2,522,203× doesn't fit the amount column on a phone: 2.5M×.
   const short = r >= 100_000 ? new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(r) : times;
   const year = w.payYear ? ` (${w.payYear})` : '';

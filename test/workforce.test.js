@@ -110,3 +110,219 @@ test('findPayRatio skips ratios quoted for other companies', () => {
     61,
   );
 });
+
+test('extractHeadcount reads other names for staff and other ways of saying it', () => {
+  assert.equal(extractHeadcount('As of December 31, 2025, Amgen had approximately 31,500 staff members in over 50 countries.'), 31500);
+  assert.equal(extractHeadcount('As of August 30, 2025, we employed approximately 130,000 AutoZoners, approximately 60 percent of whom were employed full-time.'), 130000);
+  assert.equal(extractHeadcount('As of December 31, 2025, we employed 9,400, including part-time and temporary employees.'), 9400);
+  assert.equal(extractHeadcount('As of December 31, 2025, the Company and its subsidiaries had 8,336 full time/permanent employees.'), 8336);
+  assert.equal(extractHeadcount('We ended the year 2025 with 1,762 full-time employees. None of our full-time employees are represented by labor unions.'), 1762);
+  assert.equal(extractHeadcount('We are a global company based in Dearborn, Michigan. With about 169,000 employees worldwide, the Company is committed to'), 169000);
+  assert.equal(extractHeadcount('Our approximately 67,200 full- and part-time employees in 44 countries make an important contribution'), 67200);
+  assert.equal(extractHeadcount('Medtronic has over 95,000 full-time employees, of which 43% are based in the U.S. or Puerto Rico.'), 95000);
+  assert.equal(
+    extractHeadcount('We are headquartered in Everett, Washington and have a workforce of more than 10,000 research and development, manufacturing, sales, distribution, service, and administrative professionals.'),
+    10000,
+  );
+  assert.equal(extractHeadcount('Employees totaled 55,333 at December 31, 2025. This total included 53,859 full-time and 1,474 part-time employees'), 55333);
+  assert.equal(extractHeadcount('• Employees ¶ Over 150,000 people are employed by the Company and in restaurants owned and operated by its subsidiaries.'), 150000);
+  assert.equal(
+    extractHeadcount('As of December 31, 2025 , we employed approximately ¶ 101,000 EMPLOYEES 1 ¶ across ¶ 79 COUNTRIES ¶ ~36,000 1 ¶ of whom are in the United States.'),
+    101000,
+  );
+  assert.equal(extractHeadcount('As of December 31, 2025, we employed 28 employees, all of which are full-time.'), 28);
+  assert.equal(extractHeadcount('We employ approximately 33,000 teammates.'), 33000);
+});
+
+test('extractHeadcount adds up two groups that make up the workforce', () => {
+  assert.equal(extractHeadcount('At December 31, 2025, we employed approximately 88,000 (56%) hourly employees and approximately 68,000 (44%) salaried employees.'), 156000);
+  assert.equal(extractHeadcount('As of December 31, 2025, we had 7,668 full-time and 70 part-time active employees (i.e., not interns, not on leave or disability).'), 7738);
+});
+
+test('extractHeadcount skips users, franchisees, last year and money', () => {
+  assert.equal(
+    extractHeadcount(
+      'As of August 31, 2025, we had approximately 9,000 clients comprised of over 237,000 investment professionals. As of August 31, 2025, we had 35 offices in 19 countries with 12,800 employees.',
+    ),
+    12800,
+  );
+  assert.equal(extractHeadcount('Realcommercial.com.au had 2.9 million people visit each month on average. As of June 30, 2026, the Company had approximately 21,700 employees.'), 21700);
+  assert.equal(
+    extractHeadcount(
+      'As of December 31, 2025, the Company and its subsidiaries employed approximately 49,000 persons. In addition to the persons employed by the Company and its subsidiaries, our approximately 61,000 franchise restaurants around the world are responsible for the employment of over an estimated 1 million people.',
+    ),
+    49000,
+  );
+  assert.equal(
+    extractHeadcount('At November 30, 2025, we employed 12,532 individuals of whom 10,182 were involved in Homebuilding, compared to November 30, 2024, when we employed 13,265 individuals.'),
+    12532,
+  );
+  assert.equal(
+    extractHeadcount('We have letters of credit totaling $ 2.3 million supporting the reimbursement of workers’ compensation claims. As of December 31, 2025, we employed approximately 10,800 people.'),
+    10800,
+  );
+});
+
+test('extractHeadcount skips memberships, customers and averages over years', () => {
+  assert.equal(
+    extractHeadcount(
+      'the Corporation employed approximately 213,000 employees. We have 11 Employee Networks with over 330,000 voluntary memberships, which provide teammates opportunities to meet new people.',
+    ),
+    213000,
+  );
+  assert.equal(
+    extractHeadcount('ADP’s Workforce Management offers a range of solutions to over 160,000 employers of all sizes. As of June 30, 2026, our global team of associates consisted of approximately 67,000 persons.'),
+    67000,
+  );
+  assert.equal(extractHeadcount('We employed an average of 29,287 employees during 2025. ¶ Total employees (average) ¶ 29,287 ¶ 30,336 ¶ 31,490 ¶ (3)'), 29287);
+  assert.equal(
+    extractHeadcount('As of December 31, 2025, we had approximately 44,000 full-time and 18,000 part-time employees in the U.S. and 16,000 employees internationally.'),
+    78000,
+  );
+});
+
+test('extractHeadcount reads workforce tables by their introduction', () => {
+  assert.equal(
+    extractHeadcount(
+      'The following table sets forth information about the Company’s employees as of December 31, 2025. ¶ Number of Employees by Contract and Region ¶ Salaried ¶ Hourly ¶ Part-Time ¶ Total ¶ North America ¶ 8,802 ¶ 9,904 ¶ 145 ¶ 18,851 ¶ Asia-Pacific (APAC) ¶ 2,021 ¶ 884 ¶ 10 ¶ 2,915 ¶ Total ¶ 20,119 ¶ 20,679 ¶ 698 ¶ 41,496 ¶ Available Information ¶',
+    ),
+    41496,
+  );
+  assert.equal(
+    extractHeadcount(
+      'The following table presents our employee count and their average tenure as of December 31, 2025, and the attrition rate in 2025: ¶ Employee Count ¶ Average Tenure (in years) ¶ Attrition Rate ¶ Ameren ¶ 8,913 ¶ 13 ¶ 6% ¶ Ameren Missouri ¶ 3,767 ¶ 14 ¶ 6% ¶',
+    ),
+    8913,
+  );
+  assert.equal(
+    extractHeadcount(
+      'Presented in the following table are the number of employees of CMS Energy and Consumers: ¶ December 31 ¶ 2025 ¶ 2024 ¶ 2023 ¶ CMS Energy, including Consumers ¶ Full-time and part-time employees ¶ 8,350 ¶ 8,324 ¶ 8,356 ¶ Consumers ¶',
+    ),
+    8350,
+  );
+  assert.equal(
+    extractHeadcount('the following key team member statistics as of the end of fiscal 2026: ¶ Total team members (hourly and salaried) ¶ 209,931 ¶ Total number of hourly team members ¶ 198,111 ¶'),
+    209931,
+  );
+});
+
+test('findMedianPay reads more ways of stating the median', () => {
+  // The CEO's pay comes first.
+  assert.equal(
+    findMedianPay('The annual total compensation, determined as described in the foregoing sentences, for each of Mr. Griffith and for the median employee was $7,697,503 and $104,956, respectively.').pay,
+    104956,
+  );
+  assert.equal(findMedianPay('For fiscal 2026, the annual total compensation for Mr. Gassner and our median employee was $470,833 and $140,473, respectively.').pay, 140473);
+  // Tables, with the dollar sign in its own cell, the label over two cells, dot leaders, columns.
+  assert.equal(
+    findMedianPay('CEO annual total compensation* ¶ $ ¶ 33,720,446 ¶ Median employee annual total compensation ¶ $ ¶ 123,990 ¶ CEO to median employee pay ratio ¶ 272:1').pay,
+    123990,
+  );
+  assert.equal(
+    findMedianPay('Total compensation for the median employee ¶ for fiscal 2025 (not including the CEO): ¶ $ ¶ 29,017 ¶ Total compensation for the CEO: ¶ $ ¶ 9,636,414').pay,
+    29017,
+  );
+  assert.equal(findMedianPay('Median employee’s annual total compensation . . . . . . . . . . . ¶ $186,132 ¶ Ratio of CEO to median employee').pay, 186132);
+  assert.equal(
+    findMedianPay(
+      'Name and Principal Position ¶ Year ¶ Salary ($) ¶ Total ($) ¶ James A. Rechtin ¶ 2025 ¶ 1,348,558 ¶ 18,757,075 ¶ Median Employee ¶ 2025 ¶ 79,308 ¶ — ¶ 1,378 ¶ 2,249 ¶ 82,935 ¶ Pay Ratio ¶ 226:1',
+    ).pay,
+    82935,
+  );
+  assert.equal(
+    findMedianPay(
+      'CEO to Median Employee Pay Ratio ¶ President and CEO ¶ Median Employee ¶ Base Salary ¶ $ ¶ 986,580 ¶ $ ¶ 69,467 ¶ TOTAL ¶ $ ¶ 9,799,678 ¶ $ ¶ 81,203 ¶ CEO Pay to Median Employee Pay Ratio ¶ 120.7 ¶ 1',
+    ).pay,
+    81203,
+  );
+  // Other wordings.
+  assert.equal(
+    findMedianPay('calculated by dividing Mr. Roberts’ 2025 total compensation by $92,390, which represents the annual total compensation of our median employee.').pay,
+    92390,
+  );
+  assert.equal(findMedianPay('Based on this methodology, CEO pay is $12.6 million, median employee pay is $189.7 thousand, and the ratio is 66:1.').pay, 189700);
+  assert.equal(
+    findMedianPay('the median compensated employee of our adjusted employee population employed as of October 26, 2025, other than our Interim CEO, Jeffrey M. Ettinger, was $57,789.').pay,
+    57789,
+  );
+  assert.equal(
+    findMedianPay(
+      'the median of the annual total compensation of all employees of our company (other than Messrs. Bae and Nuttall, ¶ who were our Co-Chief Executive Officers as of December 31, 2025) was $210,000;',
+    ).pay,
+    210000,
+  );
+});
+
+test('findMedianPay skips wages and reads past "U.S."', () => {
+  assert.equal(
+    findMedianPay(
+      'we determined the "median employee" was a full-time employee located in Macao, with wages and overtime pay for the year ended December 31, 2025 in the amount of $37,948. ¶ Median Employee Annual Total Compensation ¶ $ 40,215',
+    ).pay,
+    40215,
+  );
+  assert.equal(
+    findMedianPay('For 2025, we identified the median employee to be a full-time employee in the U.S. paid in U.S. Dollars whose total earnings were $98,317.').pay,
+    98317,
+  );
+});
+
+test('findMedianPay leaves out the proxy statement’s own year', () => {
+  assert.deepEqual(
+    findMedianPay(
+      'HALLIBURTON ¶ 2026 Proxy Statement ¶ 87 ¶ CEO Pay Ratio ¶ For 2025, the annual total compensation of our CEO was 186 times the median of the annual total compensation of all employees, based on annual total compensation of $16,539,020 for the CEO and $88,698 for the median employee.',
+    ),
+    { pay: 88698, year: 2025 },
+  );
+});
+
+test('findMedianPayNearRatio reads columns, "that employee" and "that associate"', () => {
+  assert.equal(
+    findMedianPayNearRatio('Year ¶ CEO Annual Total Compensation ¶ Median Employee Annual Total Compensation ¶ Pay Ratio ¶ 2025 ¶ $16,864,557 ¶ $149,323 ¶ 113:1').pay,
+    149323,
+  );
+  assert.equal(
+    findMedianPayNearRatio(
+      'We then produced a sample of employees who were paid within a 0.5% range of that median. We determined that employee’s (Summary Compensation Table) total compensation was $55,766 for 2025. Mr. Tobin’s total compensation was $18,757,706 resulting in an estimated ratio of 336:1.',
+    ).pay,
+    55766,
+  );
+  assert.equal(
+    findMedianPayNearRatio(
+      'That associate received total compensation of $103,701 for the year. Accordingly, for 2025, the ratio of Mr. Miller’s compensation to the compensation of the median associate was 284 to 1.',
+    ).pay,
+    103701,
+  );
+});
+
+test('findPayRatio reads more ways of stating the ratio', () => {
+  assert.equal(findPayRatio('our CEO’s 2025 total compensation was approximately 166 times that of our median employee.'), 166);
+  assert.equal(findPayRatio('Ms. Rumsey’s compensation for 2025 was 312 times the similarly calculated compensation of our median employee.'), 312);
+  assert.equal(findPayRatio('the annual total compensation of our CEO was approximately 89.2 times the median of the annual total compensation of all of our employees'), 89.2);
+  assert.equal(findPayRatio('The ratio of our CEO’s fiscal 2026 pay to that of our median employee (our "Pay Ratio") was approximately 296-1.'), 296);
+  assert.equal(findPayRatio('the ratio of the annual total compensation of our CEO to the median employee was 592(1) to 1, or 325(2) to 1 excluding the special award.'), 592);
+  assert.equal(findPayRatio('the median employee was $56,294; and the ratio of these two amounts was 592 (1) to 1, or 325 (2) to 1 excluding the award.'), 592);
+  assert.equal(findPayRatio('Therefore, our estimate of CEO pay to median employee pay is 203:1.'), 203);
+  assert.equal(
+    findPayRatio('The ratio of the annual total compensation for our CEO compared to the median of the annual total compensation of all of our employees for 2025 is 330. We believe'),
+    330,
+  );
+  assert.equal(
+    findPayRatio('Accordingly, annual total compensation of our principal executive officer was approximately four hundred and fifty-seven times the annual total compensation of our median employee.'),
+    457,
+  );
+  assert.equal(
+    findPayRatio(
+      'CEO Total Annual Compensation ¶ $6,466,193 ¶ Median Employee Total Annual Compensation ¶ $ 79,159 ¶ Ratio of CEO to Median Employee Total Annual Compensation ¶ 81.7 ¶ Charter Communications',
+    ),
+    81.7,
+  );
+  assert.equal(
+    findPayRatio('CEO Pay Ratio ¶ The compensation for our CEO in 2025 was approximately 120.7:1 times the 2025 pay for our median employee.'),
+    120.7,
+  );
+  // CEOs paid about what, or less than, the median employee is.
+  assert.equal(findPayRatio('Median Employee total annual compensation ¶ $ ¶ 235,416 ¶ Ratio of Chief Executive Officer to Median Employee total annual compensation ¶ 1 to 0.97 ¶'), 1.03);
+  assert.equal(findPayRatio('the median 2025 annual total compensation of all other employees was $135,696. Consequently, the applicable ratio of such amounts for 2025 was 0.3:1.'), 0.3);
+  // A page number in the contents isn't the ratio.
+  assert.equal(findPayRatio('Pay Versus Performance ¶ 77 ¶ CEO to Median Employee Pay Ratio ¶ 84 ¶ Code of Ethics ¶ 85'), null);
+});
