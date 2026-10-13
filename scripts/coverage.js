@@ -23,6 +23,59 @@ export const PARTS = [
   ['US vs abroad taxes', (d) => whoGets(d)?.governments?.us != null],
 ];
 
+// Unusual results checked against the filing and found to be real. Keyed by ticker; each review
+// holds for one fiscal year (`fy`, the fiscal year end) and stops applying when a newer filing
+// arrives. `flag` is the start of the flag it explains. Add an entry only after checking the
+// filing's own numbers.
+export const REVIEWED = {
+  AES: { flag: 'tax rate', fy: '2025-12-31', note: 'Tax benefit of $181M on $75M pre-tax income; the 10-K states an effective rate of (241)%' },
+  AMD: { flag: 'tax rate', fy: '2025-12-27', note: 'Tax benefit of $103M on $4.1B pre-tax income; the 10-K states (2.5)%' },
+  APTV: { flag: 'tax rate', fy: '2025-12-31', note: 'Tax of $700M on $919M pre-tax income; the 10-K states 76%' },
+  AVGO: { flag: 'tax rate', fy: '2025-11-02', note: 'Net tax benefit of $397M on $22.7B pre-tax income, per the income statement' },
+  AXON: { flag: 'tax rate', fy: '2025-12-31', note: 'Tax benefit of $106M (stock-pay deductions) on $19M pre-tax income' },
+  CSGP: { flag: 'tax rate', fy: '2025-12-31', note: 'Tax of $23M on $30M pre-tax income; the 10-K states 77%' },
+  DD: { flag: 'tax rate', fy: '2025-12-31', note: 'Tax of $102M on $200M pre-tax income from continuing operations (domestic loss, foreign profit)' },
+  DIS: { flag: 'tax rate', fy: '2025-09-27', note: 'Tax benefit of $1.4B on $12.0B pre-tax income; the 10-K states negative 11.9%' },
+  EL: { flag: 'tax rate', fy: '2026-06-30', note: 'Tax of $335M on $517M pre-tax income, per the income statement' },
+  GEV: { flag: 'tax rate', fy: '2025-12-31', note: 'Tax benefit of $2.1B on $2.8B pre-tax income; the 10-K states (72.5)%' },
+  GIS: { flag: 'tax rate', fy: '2026-05-31', note: 'Tax of $414M on $406M pre-tax income; the 10-K states 102.2% as reported' },
+  GPC: { flag: 'tax rate', fy: '2025-12-31', note: 'Tax benefit of $14M on $52M pre-tax income; the 10-K states (26.4)%' },
+  IBM: { flag: 'tax rate', fy: '2025-12-31', note: 'Tax benefit of $242M on $10.3B pre-tax income, per the income statement' },
+  INTC: { flag: 'tax rate', fy: '2025-12-27', note: 'Tax of $1.5B on $1.6B pre-tax income; the 10-K states 98%' },
+  LNT: { flag: 'tax rate', fy: '2025-12-31', note: 'Tax benefit of $149M on $661M pre-tax income (renewable energy credits)' },
+  MGM: { flag: 'tax rate', fy: '2025-12-31', note: 'Tax benefit of $240M on $281M pre-tax income; the 10-K states (85.5)%' },
+  MOS: { flag: 'tax rate', fy: '2025-12-31', note: 'Tax of $640M on $1.2B pre-tax income; the 10-K states 52.7%' },
+  NEE: { flag: 'tax rate', fy: '2025-12-31', note: 'Tax benefit of $802M on $4.5B pre-tax income (clean energy credits); the 10-K states about (18)%' },
+  OMC: { flag: 'tax rate', fy: '2025-12-31', note: 'Tax of $242M on $278M pre-tax income; the 10-K states 87%' },
+  PCG: { flag: 'tax rate', fy: '2025-12-31', note: 'Tax benefit of $280M on $2.4B pre-tax income at PG&E Corporation, per the income statement' },
+  PFE: { flag: 'tax rate', fy: '2025-12-31', note: 'Tax benefit of $266M on $7.5B pre-tax income; the 10-K states (3.5)% on continuing operations' },
+  PSA: { flag: 'tax rate', fy: '2025-12-31', note: 'A REIT: tax benefit of $7M on $1.8B pre-tax income' },
+  QCOM: { flag: 'tax rate', fy: '2025-09-28', note: 'Tax of $7.1B on $12.7B pre-tax income; the 10-K states 56%' },
+  RDDT: { flag: 'tax rate', fy: '2025-12-31', note: 'Tax benefit of $1M on $529M pre-tax income, per the income statement' },
+  UBER: { flag: 'tax rate', fy: '2025-12-31', note: 'Tax benefit of $4.3B on $5.8B pre-tax income, per the income statement' },
+  VTR: { flag: 'tax rate', fy: '2025-12-31', note: 'A REIT: tax benefit of $14M on $204M pre-tax income' },
+  WY: { flag: 'tax rate', fy: '2025-12-31', note: 'Tax benefit of $64M on $260M pre-tax income, per the income statement' },
+  XEL: { flag: 'tax rate', fy: '2025-12-31', note: 'Tax benefit of $245M on $1.8B pre-tax income; the 10-K states (13.8)%' },
+  APP: { flag: 'profit', fy: '2025-12-31', note: 'Net income $3.3B on $5.5B revenue' },
+  CME: { flag: 'profit', fy: '2025-12-31', note: 'Net income $4.1B on $6.5B revenue' },
+  ECHO: { flag: 'profit', fy: '2025-12-31', note: 'Net loss $14.5B on $15.0B revenue, after large impairments' },
+  IBKR: { flag: 'profit', fy: '2025-12-31', note: 'Net income $4.4B (most of it to non-controlling interests) on $6.2B net revenues' },
+  LITE: { flag: 'profit', fy: '2026-06-27', note: 'Net loss $6.9B on $3.0B revenue, from a $7.8B loss on extinguishing convertible notes' },
+  MRNA: { flag: 'profit', fy: '2025-12-31', note: 'Net loss $2.8B on $1.9B revenue' },
+  MU: { flag: 'profit', fy: '2026-09-03', note: 'Net income $85.0B on $133.2B revenue' },
+  SPG: { flag: 'profit', fy: '2025-12-31', note: 'Net income $5.4B on $6.4B revenue, mostly gains below operating income' },
+  TPL: { flag: 'profit', fy: '2025-12-31', note: 'Net income $481M on $798M revenue' },
+  VICI: { flag: 'profit', fy: '2025-12-31', note: 'Net income $2.8B on $4.0B rent' },
+  WDC: { flag: 'profit', fy: '2026-07-03', note: 'Net income $9.4B on $12.9B revenue, including a $6.5B gain on its retained Sandisk shares' },
+  ERIE: { flag: 'one cost line', fy: '2025-12-31', note: 'The income statement shows one operating expense total ($3.35B, cost of operations), split only by service' },
+};
+
+/** The review that explains this flag for this filing, or null. */
+export function reviewed(ticker, d, flag) {
+  const r = REVIEWED[ticker];
+  return r && r.fy === d.fiscalYearEnd && flag.startsWith(r.flag) ? r : null;
+}
+
 /** Unusual results: often a sign we read the filing wrong, sometimes real. */
 export function flags(d) {
   const out = [];
@@ -51,7 +104,9 @@ export async function coverage({ quiet = false } = {}) {
   for (const f of (await readdir(DATA + 'c')).sort()) {
     const d = JSON.parse(await readFile(`${DATA}c/${f}`, 'utf8'));
     const meta = byCik.get(d.cik) ?? { ticker: d.ticker, sector: 'Other' };
-    companies.push({ d, ...meta, has: PARTS.map(([, ok]) => ok(d)), flags: flags(d) });
+    const all = flags(d);
+    const checked = all.map((f) => [f, reviewed(meta.ticker, d, f)]).filter(([, r]) => r);
+    companies.push({ d, ...meta, has: PARTS.map(([, ok]) => ok(d)), flags: all.filter((f) => !checked.some(([c]) => c === f)), checked });
   }
   companies.sort((a, b) => a.ticker.localeCompare(b.ticker));
 
@@ -60,6 +115,7 @@ export async function coverage({ quiet = false } = {}) {
   const parts = PARTS.map(([name], i) => [name, companies.filter((c) => c.has[i]).length]);
   const sectors = [...new Set(companies.map((c) => c.sector))].sort();
   const flagged = companies.filter((c) => c.flags.length).map((c) => [c.ticker, c.d.name, c.flags]);
+  const checked = companies.filter((c) => c.checked.length);
 
   const md = [
     '# Data coverage',
@@ -88,6 +144,17 @@ export async function coverage({ quiet = false } = {}) {
     '| Ticker | Company | Why |',
     '| --- | --- | --- |',
     ...flagged.map(([t, n, f]) => `| ${t} | ${n.replace(/\|/g, '/')} | ${f.join('; ')} |`),
+    '',
+    '<details>',
+    `<summary>Checked and real (${checked.length})</summary>`,
+    '',
+    'Unusual results checked against the filing (`REVIEWED` in `scripts/coverage.js`). A check expires when a newer filing arrives.',
+    '',
+    '| Ticker | Company | Why | Checked |',
+    '| --- | --- | --- | --- |',
+    ...checked.map((c) => `| ${c.ticker} | ${c.d.name.replace(/\|/g, '/')} | ${c.checked.map(([f]) => f).join('; ')} | ${c.checked.map(([, r]) => r.note).join('; ')} |`),
+    '',
+    '</details>',
     '',
     '## Missing parts',
     '',

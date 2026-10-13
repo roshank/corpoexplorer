@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseInstance } from '../lib/xbrl.js';
-import { buildGovernmentCustomer, buildTaxBreaks } from '../lib/government.js';
+import { buildGovernmentCustomer, buildTaxBreaks, buildTaxSplit } from '../lib/government.js';
 
 // Contexts: `dims` is [[axis, member], ...].
 const ctx = (id, dims = [], start = '2024-01-01', end = '2024-12-31') => `
@@ -142,4 +142,14 @@ test('buildGovernmentCustomer uses a government contracts concentration percenta
 
 test('buildGovernmentCustomer returns null for companies that sell to everyone', () => {
   assert.equal(buildGovernmentCustomer(xbrl(fact('us-gaap:Revenues', 1000)), {}, '2024-12-31', 1000), null);
+});
+
+test('buildTaxSplit reads a company with no foreign tax line as all US, when the parts add up', () => {
+  const split = (body) => buildTaxSplit(xbrl(`${fact('us-gaap:IncomeTaxExpenseBenefit', 100e6)}${body}`), '2024-12-31');
+  assert.deepEqual(
+    split(`${fact('us-gaap:CurrentFederalTaxExpenseBenefit', 70e6)}${fact('us-gaap:DeferredFederalIncomeTaxExpenseBenefit', 10e6)}${fact('us-gaap:CurrentStateAndLocalTaxExpenseBenefit', 20e6)}`),
+    { us: 100e6, federal: 80e6, state: 20e6, foreign: 0, total: 100e6 },
+  );
+  // Parts that don't add up to the total say nothing about where the rest went.
+  assert.equal(split(fact('us-gaap:CurrentFederalTaxExpenseBenefit', 30e6)), null);
 });
