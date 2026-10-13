@@ -300,6 +300,7 @@ test('findPayRatio reads more ways of stating the ratio', () => {
   assert.equal(findPayRatio('the annual total compensation of our CEO was approximately 89.2 times the median of the annual total compensation of all of our employees'), 89.2);
   assert.equal(findPayRatio('The ratio of our CEO’s fiscal 2026 pay to that of our median employee (our "Pay Ratio") was approximately 296-1.'), 296);
   assert.equal(findPayRatio('the ratio of the annual total compensation of our CEO to the median employee was 592(1) to 1, or 325(2) to 1 excluding the special award.'), 592);
+  assert.equal(findPayRatio('the median employee was $56,294; and the ratio of these two amounts was 592 (1) to 1, or 325 (2) to 1 excluding the award.'), 592);
   assert.equal(findPayRatio('Therefore, our estimate of CEO pay to median employee pay is 203:1.'), 203);
   assert.equal(
     findPayRatio('The ratio of the annual total compensation for our CEO compared to the median of the annual total compensation of all of our employees for 2025 is 330. We believe'),
