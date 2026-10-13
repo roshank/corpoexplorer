@@ -232,9 +232,6 @@ test("a utility's operating revenue outranks its contract revenue; a REIT's rent
   assert.equal(utility.total.value, 1000);
   const rentOnly = buildBreakdowns(parseInstance(xml(`${ctx('t')}${fact('OperatingLeaseLeaseIncome', 't', 500)}`)), {}, '2024-12-31');
   assert.equal(rentOnly.total.value, 500);
-  // Contract revenue that is only the management fees, next to much more rent.
-  const fees = buildBreakdowns(parseInstance(xml(`${ctx('t')}${fact(R, 't', 20)}${fact('OperatingLeaseLeaseIncome', 't', 980)}`)), {}, '2024-12-31');
-  assert.equal(fees.total.value, 1000);
 });
 
 test("slices split by a second axis are added up (each segment's US and foreign sales)", () => {
@@ -359,4 +356,18 @@ test('a year reported in two pieces around a merger is added up', () => {
   // A filing with full-year figures is left alone.
   const normal = parseInstance(instanceXml);
   assert.equal(combineSplitYear(normal, '2024-12-31'), normal);
+});
+
+const totalOf = (body, statement) => buildBreakdowns(parseInstance(`<x>${ctx('total')}${body}</x>`), {}, '2024-12-31', statement).total;
+
+test('the top line when revenue tags cover only part of it', () => {
+  // A landlord tagging only a fee line as revenue: the rent is the top line.
+  assert.deepEqual(totalOf(`${fact(R, 'total', 13)}${fact('OperatingLeaseLeaseIncome', 'total', 1500)}`), { concept: 'OperatingLeaseLeaseIncome', value: 1500 });
+  // A bank tagging only its fees: net interest income plus non-interest income.
+  assert.equal(totalOf(`${fact(R, 'total', 150)}${fact('InterestIncomeExpenseNet', 'total', 600)}${fact('NoninterestIncome', 'total', 200)}`).value, 800);
+  // A "Revenues" fact the income statement doesn't show, when it shows one other revenue line.
+  const body = `${fact('Revenues', 'total', 1200)}${fact(R, 'total', 1000)}`;
+  assert.equal(totalOf(body).value, 1200);
+  assert.equal(totalOf(body, [`us-gaap:${R}`, 'us-gaap:CostOfRevenue']).value, 1000);
+  assert.equal(totalOf(body, ['us-gaap:Revenues', `us-gaap:${R}`]).value, 1200);
 });
