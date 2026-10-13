@@ -12,7 +12,7 @@ test('a review explains its flag for the fiscal year it was checked, and expires
 
 test('every review names a flag, a fiscal year end and a note', () => {
   for (const [ticker, r] of Object.entries(REVIEWED)) {
-    assert.match(r.flag, /^(tax rate|profit|one cost line|not itemized)/, ticker);
+    assert.match(r.flag, /^(tax rate|profit|one cost line|not itemized|workers estimate)/, ticker);
     assert.match(r.fy, /^\d{4}-\d{2}-\d{2}$/, ticker);
     assert.ok(r.note.length > 10, ticker);
   }

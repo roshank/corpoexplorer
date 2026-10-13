@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseInstance, parsePresentation } from '../lib/xbrl.js';
-import { buildSpending, findIncomeStatement } from '../lib/spending.js';
+import { PLAIN_BY_LABEL, buildSpending, findIncomeStatement } from '../lib/spending.js';
 
 const ctx = (id, start = '2024-01-01', end = '2024-12-31') => `
   <xbrli:context id="${id}"><xbrli:entity><xbrli:identifier scheme="x">1</xbrli:identifier></xbrli:entity>
@@ -249,4 +249,11 @@ test("a bank's costs are its provision plus the lines after non-interest income"
     ['Income taxes', 10],
     ['Kept as profit', 40],
   ]);
+});
+
+test('a gain or loss on deferred compensation plans is not employee pay', () => {
+  const pay = (label) => PLAIN_BY_LABEL.some(([re, , tag]) => tag === 'employees' && re.test(label));
+  assert.equal(pay('Income (Loss) On Deferred Compensation Plans'), false);
+  assert.equal(pay('Salaries, wages and benefits'), true);
+  assert.equal(pay('Compensation and benefits'), true);
 });

@@ -97,6 +97,8 @@ for (const co of queue) {
     try {
       data.federal = await getFederalAwards(co.ticker, data.name, data.fiscalYearEnd);
     } catch (err) {
+      // The service is down now and then: keep the last figures rather than none.
+      if (old?.federal) data.federal = old.federal;
       console.log(`  warn  ${tag}: USAspending: ${err.message}`);
     }
     data.name = companyName(data.name, indexName.get(co.cik));

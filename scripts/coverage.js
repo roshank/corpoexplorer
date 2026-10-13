@@ -32,6 +32,8 @@ export const REVIEWED = {
   AMD: { flag: 'tax rate', fy: '2025-12-27', note: 'Tax benefit of $103M on $4.1B pre-tax income; the 10-K states (2.5)%' },
   APTV: { flag: 'tax rate', fy: '2025-12-31', note: 'Tax of $700M on $919M pre-tax income; the 10-K states 76%' },
   AVGO: { flag: 'tax rate', fy: '2025-11-02', note: 'Net tax benefit of $397M on $22.7B pre-tax income, per the income statement' },
+  HLT: { flag: 'workers estimate', fy: '2025-12-31', note: "182,000 is Hilton's count of people it employs or manages, including staff at hotels it manages for owners, so headcount × median pay overstates its own pay bill" },
+  SKYD: { flag: 'tax rate', fy: '2025-12-31', note: 'Tax benefit of $119M on $28M pre-tax income (before losses of affiliates), adding the two parts of the year split by the merger' },
   AXON: { flag: 'tax rate', fy: '2025-12-31', note: 'Tax benefit of $106M (stock-pay deductions) on $19M pre-tax income' },
   CSGP: { flag: 'tax rate', fy: '2025-12-31', note: 'Tax of $23M on $30M pre-tax income; the 10-K states 77%' },
   DD: { flag: 'tax rate', fy: '2025-12-31', note: 'Tax of $102M on $200M pre-tax income from continuing operations (domestic loss, foreign profit)' },
