@@ -326,3 +326,22 @@ test('findPayRatio reads more ways of stating the ratio', () => {
   // A page number in the contents isn't the ratio.
   assert.equal(findPayRatio('Pay Versus Performance ¶ 77 ¶ CEO to Median Employee Pay Ratio ¶ 84 ¶ Code of Ethics ¶ 85'), null);
 });
+
+test('extractHeadcount reads older phrasings, not hiring goals', () => {
+  assert.equal(
+    extractHeadcount('As of December 31, 2021, our full-time count for our and our subsidiaries’ employees worldwide was 99,290. To date, we have not experienced any work stoppages.'),
+    99290,
+  );
+  assert.equal(
+    extractHeadcount(
+      'We launched a campaign to help skill and recruit into the cybersecurity workforce 250,000 people by 2025. ¶ As of June 30, 2022, we employed approximately 221,000 people on a full-time basis.',
+    ),
+    221000,
+  );
+});
+
+test('findMedianPay reads across a page break', () => {
+  const text =
+    'Mr. Musk’s 2023 annual total compensation was $0, and the median 2023 annual total compensation of all other qualifying ¶ 2024 Proxy Statement 135 ¶ TABLE OF CONTENTS ¶ employees, as determined pursuant to the methodology set forth below, was $45,811.';
+  assert.equal(findMedianPay(text)?.pay, 45811);
+});

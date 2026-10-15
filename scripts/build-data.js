@@ -9,7 +9,7 @@
 
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { companyFromFiling, getTickers, latestAnnualReport } from '../lib/sec.js';
+import { annualReportHistory, companyFromFiling, getTickers, latestAnnualReport, yearFromFiling } from '../lib/sec.js';
 import { getFederalAwards } from '../lib/usaspending.js';
 import { companyName, fetchSp500 } from '../lib/sp500.js';
 import { stamp } from './stamp.js';
@@ -18,6 +18,11 @@ import { writeSectorStats } from './sectors.js';
 
 // Bump when the shape or the logic of the per-company data changes, to force a rebuild.
 const DATA_VERSION = 15;
+// Fiscal years shown in the workers vs owners history, including the latest.
+const HISTORY_YEARS = 5;
+// Reading earlier years for every company takes hours the first time, so a build stops reading
+// new ones after this long (the rest come in the next build) and finishes within the Action's limit.
+const HISTORY_MINUTES = Number(process.env.HISTORY_MINUTES) || 100;
 
 const DATA = fileURLToPath(new URL('../data/', import.meta.url));
 const COMPANIES = DATA + 'c/';
@@ -101,6 +106,14 @@ for (const co of queue) {
       if (old?.federal) data.federal = old.federal;
       console.log(`  warn  ${tag}: USAspending: ${err.message}`);
     }
+    // Earlier years, for the workers vs owners history. Past 10-Ks don't change, so a year read
+    // under the same data version is kept.
+    try {
+      data.history = await history(co, filing, old?.v === DATA_VERSION ? old.history : null, tag);
+    } catch (err) {
+      if (old?.history) data.history = old.history;
+      console.log(`  warn  ${tag}: history: ${err.message}`);
+    }
     data.name = companyName(data.name, indexName.get(co.cik));
     if (JSON.stringify(data) !== JSON.stringify(old)) await writeFile(file, JSON.stringify(data));
     built.push({ co, name: data.name });
@@ -111,6 +124,30 @@ for (const co of queue) {
     stats.failed++;
     console.log(`  fail  ${tag}: ${err.message}`);
   }
+}
+
+/**
+ * The years before the latest 10-K, newest first, reusing years already read. Past the time
+ * budget, only the years already read are kept.
+ */
+async function history(co, filing, previous, tag) {
+  const overBudget = Date.now() - started > HISTORY_MINUTES * 60e3;
+  if (overBudget && !previous) return [];
+  const reports = await annualReportHistory(filing.cik ?? co.cik, HISTORY_YEARS + 1);
+  const past = reports.filter((r) => r.reportDate < filing.reportDate).slice(0, HISTORY_YEARS - 1);
+  // The years download side by side; requests still start one at a time (lib/sec.js).
+  const years = await Promise.all(
+    past.map(async (r) => {
+      const kept = previous?.find((h) => h.accession === r.accession);
+      if (kept || overBudget) return kept;
+      try {
+        return await yearFromFiling(co, r);
+      } catch (err) {
+        console.log(`  warn  ${tag}: ${r.reportDate.slice(0, 4)} 10-K: ${err.message}`);
+      }
+    }),
+  );
+  return years.filter(Boolean);
 }
 
 // The index the search box uses: one row per ticker, pointing at the company file.

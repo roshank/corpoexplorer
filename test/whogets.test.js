@@ -83,3 +83,19 @@ test('ownersToWorkers: how many times what workers got went to owners', () => {
   assert.equal(ownersToWorkers(w(8.84, 0)).ratio, 0);
   assert.equal(ownersToWorkers(w(null, 5)), null);
 });
+
+test('an earlier year, with only what the history keeps, gives workers vs owners', () => {
+  const year = {
+    totalRevenue: 1000,
+    spending: {
+      rows: [
+        { kind: 'tax', per100: 5, value: 50 },
+        { kind: 'profit', per100: 30, value: 300 },
+      ],
+      afterProfit: { dividends: { per100: 10 }, buybacks: null },
+      employees: { payLine: null },
+    },
+    workforce: { employees: 10, medianPay: 20, payYear: 2021 },
+  };
+  assert.deepEqual(ownersToWorkers(whoGets(year)), { ratio: 0.5, workers: 20, owners: 10, estimate: true });
+});

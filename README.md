@@ -69,6 +69,7 @@ Requires Node 20+. There are no dependencies to install.
   - **Owners:** dividends and buybacks.
   - **Kept by the company:** profit left after dividends and buybacks. Negative when a company paid out more than it earned.
   A line underneath shows how much of the $100 came from the government.
+- **Workers vs owners** (under Owners' profit): a balance scale of pay to workers against dividends and buybacks, per $100. Below it, both over the company's last five fiscal years; pick a year, or press play, and the scale tips year by year. Earlier years are read from each year's own 10-K and proxy statement, the same way as the latest (`yearFromFiling` in `lib/sec.js`), and kept in the company file as `history`. Past filings don't change, so a year already read is reused; a year whose filings lack a headcount or median pay shows as a gap.
 - **Show details:** filing labels, agency lists and method notes are hidden until the reader turns them on (remembered in the browser).
 - Rows under 1¢ per $100 in the Government money & taxes card are combined into one row.
 - **Click a row in "Where it goes"** to see what it means: a plain-English explanation (`explain.js`) and, when the filing has one, the company's own description of that line from its 10-K. The build pulls these from the filing text (`lib/describe.js`): the sentence that starts with the line's name and defines it ("Our cost of revenue consists of…"), up to the end of its paragraph. About a third of cost lines have one.
