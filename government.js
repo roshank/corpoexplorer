@@ -53,6 +53,7 @@ export function renderGovernment(d, short) {
     <div class="card gov" id="government">
       <h3 class="first">Government money &amp; taxes</h3>
       <p class="hint">What the US government paid ${esc(short)}, and what it paid back in taxes, per $100 of revenue.</p>
+      ${renderCustomer(d, short)}
       ${d.federal ? renderFederal(d.federal, d, short) : ''}
       ${renderTaxes(d, short)}
     </div>`;
@@ -119,6 +120,29 @@ function renderTaxes(d, short) {
   }
 
   return parts.length ? `<h4>Taxes</h4>${parts.join('')}` : '';
+}
+
+/**
+ * The US government as a customer, from the 10-K: the figure the top of the page and the home page's
+ * "Most from the government" list use when there is one.
+ */
+function renderCustomer(d, short) {
+  const c = d.government.customer;
+  if (!c) return '';
+  const per = share(c.value, d.totalRevenue);
+  return `
+    <h4>As a customer</h4>
+    <p class="hint">Revenue ${esc(short)} reports from the US government in its 10-K.</p>
+    <ul class="rows compact">${row(
+      'US government',
+      `“${esc(c.label)}” in the 10-K${c.fromPercent ? ', from the share of revenue it reports' : ''}`,
+      Math.min(per / 100, 1),
+      'var(--s1)',
+      cents(per),
+      money(c.value),
+      true,
+    )}</ul>
+    ${d.federal ? '<p class="tile-note fine">Federal awards below are counted differently: what agencies committed during the year, which can be more or less than the revenue booked.</p>' : ''}`;
 }
 
 function renderFederal(f, d, short) {
