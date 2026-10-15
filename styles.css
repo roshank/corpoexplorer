@@ -713,6 +713,137 @@ h3.first {
   font-weight: 700;
   fill: var(--surface);
 }
+/* Beam and pans tip with transforms, so a change of year animates. */
+.sc-beam,
+.sc-pan {
+  transition: transform 0.7s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+.sc-badge rect {
+  transition:
+    x 0.3s,
+    width 0.3s;
+}
+.vs-year {
+  margin: 2px 0 0;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Workers and owners over the years. */
+.tl {
+  margin: 16px auto 0;
+  max-width: 400px;
+}
+.tl-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.tl-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.tl-play {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+.tl-play:hover {
+  border-color: var(--ink-2);
+}
+.tl-chart {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  overflow: visible;
+}
+.tl-base {
+  stroke: var(--ink-2);
+  stroke-width: 1;
+}
+.tl-grid {
+  stroke: var(--hairline);
+  stroke-width: 1;
+}
+.tl-axis {
+  text-anchor: end;
+  font-size: 11px;
+  fill: var(--muted);
+}
+.tl-label {
+  font-size: 12px;
+  font-weight: 600;
+  fill: var(--ink-2);
+}
+.tl-line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.tl-dot {
+  stroke: var(--surface);
+  stroke-width: 2;
+  transition: r 0.2s;
+}
+.tl-dot.on {
+  r: 6;
+}
+.tl-now {
+  stroke: var(--muted);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  transition:
+    x1 0.4s,
+    x2 0.4s;
+}
+.tl-hit {
+  fill: transparent;
+  cursor: pointer;
+}
+/* One button per year, under its point on the chart. */
+.tl-years {
+  position: relative;
+  height: 32px;
+  margin-top: 4px;
+}
+.tl-years button {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  min-width: 44px;
+  min-height: 32px;
+  padding: 4px 2px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.tl-years button[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--surface);
+  font-weight: 700;
+}
+.tl-years button:disabled {
+  color: var(--muted);
+  cursor: default;
+  text-decoration: line-through;
+}
 .vs-note {
   margin: 10px 0 0;
   font-size: 13px;
@@ -830,7 +961,10 @@ h3.first {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .strip .seg {
+  .strip .seg,
+  .sc-beam,
+  .sc-pan,
+  .tl-now {
     transition: none;
   }
   .skeleton {

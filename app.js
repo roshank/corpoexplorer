@@ -229,6 +229,7 @@ function renderCompany(d) {
   }
 
   if (d.spending) renderSpending(result.querySelector('#spending'), d.spending, d, short);
+  wireTimeline(result, d);
 
   result.classList.toggle('show-details', showDetails);
   result.querySelector('.details-toggle').addEventListener('click', (e) => {
@@ -399,76 +400,282 @@ function renderWhoGets(d, short) {
 /** 0.22×, 4.1×, 36× */
 const times = (r) => (r < 1 ? r.toFixed(2) : r < 10 ? r.toFixed(1) : Math.round(r).toLocaleString('en-US'));
 
+/** "FY2024": the year the fiscal year ends in, as companies name it (Walmart's ends in January). */
+const fyLabel = (date) => `FY${date.slice(0, 4)}`;
+
+/** Who got more, in a sentence. */
+function versusSays(r) {
+  if (r.owners === 0) return 'Owners got no payouts this year: no dividends or buybacks.';
+  if (r.ratio >= 1.05) return `Owners got ${times(r.ratio)} times what workers got.`;
+  if (r.ratio > 1 / 1.05) return 'Workers and owners got about the same.';
+  return `Workers got ${times(1 / r.ratio)} times what owners got.`;
+}
+
+/**
+ * Workers vs owners for each year we have, oldest first: { fy, r } with r from ownersToWorkers(),
+ * null for a year without a workers figure. The last one is the latest 10-K.
+ */
+function versusYears(d) {
+  return [d, ...(d.history ?? [])]
+    .map((y) => ({ fy: fyLabel(y.fiscalYearEnd), r: ownersToWorkers(whoGets(y)) }))
+    .reverse();
+}
+
 /**
  * Workers vs owners, who gets more: what went to owners as a multiple of what went to workers
- * (10x, 50x), with both amounts as bars and the sector's typical figure.
+ * (10x, 50x), with both amounts as bars and the sector's typical figure. With earlier years, a
+ * chart of both over time picks the year the scale shows, and play steps through them.
  */
 function versusSection(d, w) {
   const r = ownersToWorkers(w);
   if (!r) return '';
   const est = r.estimate ? ' (est.)' : '';
-  let says;
-  if (r.owners === 0) says = 'Owners got no payouts this year: no dividends or buybacks.';
-  else if (r.ratio >= 1.05) says = `Owners got ${times(r.ratio)} times what workers got.`;
-  else if (r.ratio > 1 / 1.05) says = 'Workers and owners got about the same.';
-  else says = `Workers got ${times(1 / r.ratio)} times what owners got.`;
+  const says = versusSays(r);
   const typical = sectors[d.sector]?.ownersToWorkers;
   const context = typical != null ? ` Typical in ${esc(d.sector)}: owners get ${times(typical)}× what workers get.` : '';
+  const years = versusYears(d);
+  const known = years.filter((y) => y.r);
   return `
     <section class="vs" aria-label="Workers vs owners">
       <h3 class="vs-head">Workers vs owners <span>Who gets more?</span></h3>
+      ${known.length > 1 ? `<p class="vs-year" aria-live="polite">${years.at(-1).fy}</p>` : ''}
       ${scale(r, est, says)}
       <p class="vs-says">${says}</p>
+      ${known.length > 1 ? timeline(years) : ''}
       <p class="vs-note">Of every $100: pay to workers vs money paid out to owners as dividends and buybacks.${context}</p>
     </section>`;
 }
 
-/**
- * A balance scale with workers on the left pan and owners on the right. The beam tips toward
- * whoever got more, further the bigger the gap, and a badge over the heavier pan says by how much.
- */
-function scale(r, est, says) {
-  const W = 340;
-  const cx = W / 2;
-  const top = 68; // pivot
-  const arm = 118;
-  // Tilt: positive when owners got more. Grows with the log of the ratio, capped.
+// The scale's geometry. The beam and pans are drawn level and tipped with CSS transforms, so a
+// change of year animates.
+const SC = { W: 340, cx: 170, top: 68, arm: 118, drop: 62, maxDeg: 20 };
+
+/** How the scale tips for r: degrees (positive when owners got more, growing with the log of the ratio) and the badge's words. */
+function tilt(r) {
   const sign = r.owners === 0 ? -1 : Math.sign(Math.log(r.ratio));
-  const size = r.owners === 0 ? 1 : Math.min(Math.abs(Math.log2(r.ratio)) / 3, 1);
+  // Full tilt at 64x, so the years of a company that pays owners far more still differ.
+  const size = r.owners === 0 ? 1 : Math.min(Math.abs(Math.log2(r.ratio)) / 6, 1);
   const even = r.owners > 0 && Math.abs(Math.log(r.ratio)) < Math.log(1.05);
-  const deg = even ? 0 : sign * (4 + 12 * size);
-  const rad = (deg * Math.PI) / 180;
-  const end = (side) => ({ x: cx + side * arm * Math.cos(rad), y: top + side * arm * Math.sin(rad) });
-  const L = end(-1);
-  const R = end(1);
-  const drop = 62; // string length from beam end to pan
-  const pan = (p, color, icon, amount, label) => `
-      <line x1="${p.x - 26}" y1="${p.y + drop}" x2="${p.x}" y2="${p.y}" class="sc-string"/>
-      <line x1="${p.x + 26}" y1="${p.y + drop}" x2="${p.x}" y2="${p.y}" class="sc-string"/>
-      <path d="M${p.x - 34} ${p.y + drop} h68 a34 12 0 0 1 -68 0z" fill="var(${color})" opacity="0.9"/>
-      <circle cx="${p.x}" cy="${p.y + drop - 22}" r="20" fill="var(--surface)" stroke="var(${color})" stroke-width="2"/>
-      <g transform="translate(${p.x - 13} ${p.y + drop - 35})" style="color:var(${color})">${icon}</g>
-      <text x="${p.x}" y="${p.y + drop + 34}" class="sc-amt">${amount}</text>
-      <text x="${p.x}" y="${p.y + drop + 52}" class="sc-label">${label}</text>`;
-  // The badge sits over the pivot and says who got more; the tilt shows which way.
-  const badgeText = even
+  const deg = even ? 0 : sign * (4 + (SC.maxDeg - 4) * size);
+  const badge = even
     ? 'About even'
     : r.owners === 0
       ? 'All to workers'
       : `${sign > 0 ? 'Owners' : 'Workers'} get ${times(Math.max(r.ratio, 1 / r.ratio))}× more`;
-  const bw = badgeText.length * 8.2 + 24;
-  const badge = `<g class="sc-badge"><rect x="${cx - bw / 2}" y="4" width="${bw}" height="28" rx="14"/><text x="${cx}" y="23">${badgeText}</text></g>`;
-  const H = Math.max(L.y, R.y) + drop + 60;
+  return { deg, badge };
+}
+
+/** Where a pan hangs when the beam is at `deg`, relative to where it hangs when level. */
+function panShift(side, deg) {
+  const rad = (deg * Math.PI) / 180;
+  return `translate(${side * SC.arm * (Math.cos(rad) - 1)}px, ${side * SC.arm * Math.sin(rad)}px)`;
+}
+
+/**
+ * A balance scale with workers on the left pan and owners on the right. The beam tips toward
+ * whoever got more, further the bigger the gap, and a badge over the pivot says by how much.
+ */
+function scale(r, est, says) {
+  const { W, cx, top, arm, drop } = SC;
+  const { deg, badge } = tilt(r);
+  // Tall enough for the steepest tilt, so the layout doesn't jump between years.
+  const H = Math.ceil(top + arm * Math.sin((SC.maxDeg * Math.PI) / 180) + drop + 60);
+  const pan = (side, cls, color, icon, amount, label) => {
+    const x = cx + side * arm;
+    const y = top;
+    return `
+      <g class="sc-pan ${cls}" style="transform:${panShift(side, deg)}">
+        <line x1="${x - 26}" y1="${y + drop}" x2="${x}" y2="${y}" class="sc-string"/>
+        <line x1="${x + 26}" y1="${y + drop}" x2="${x}" y2="${y}" class="sc-string"/>
+        <path d="M${x - 34} ${y + drop} h68 a34 12 0 0 1 -68 0z" fill="var(${color})" opacity="0.9"/>
+        <circle cx="${x}" cy="${y + drop - 22}" r="20" fill="var(--surface)" stroke="var(${color})" stroke-width="2"/>
+        <g transform="translate(${x - 13} ${y + drop - 35})" style="color:var(${color})">${icon}</g>
+        <text x="${x}" y="${y + drop + 34}" class="sc-amt">${amount}</text>
+        <text x="${x}" y="${y + drop + 52}" class="sc-label">${label}</text>
+      </g>`;
+  };
+  const bw = badge.length * 8.2 + 24;
   return `
       <svg class="sc" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(says)}">
         <path d="M${cx - 40} ${H - 6} h80" class="sc-post"/>
         <line x1="${cx}" y1="${top}" x2="${cx}" y2="${H - 6}" class="sc-post"/>
-        <line x1="${L.x}" y1="${L.y}" x2="${R.x}" y2="${R.y}" class="sc-beam"/>
+        <line x1="${cx - arm}" y1="${top}" x2="${cx + arm}" y2="${top}" class="sc-beam"
+          style="transform-origin:${cx}px ${top}px;transform:rotate(${deg}deg)"/>
         <circle cx="${cx}" cy="${top}" r="6" class="sc-pivot"/>
-        ${pan(L, '--s4', ICONS.workers, per100(r.workers), `Workers${est}`)}
-        ${pan(R, '--s5', ICONS.owners, per100(r.owners), 'Owners')}
-        ${badge}
+        ${pan(-1, 'sc-workers', '--s4', ICONS.workers, per100(r.workers), `Workers${est}`)}
+        ${pan(1, 'sc-owners', '--s5', ICONS.owners, per100(r.owners), 'Owners')}
+        <g class="sc-badge"><rect x="${cx - bw / 2}" y="4" width="${bw}" height="28" rx="14"/><text x="${cx}" y="23">${badge}</text></g>
       </svg>`;
+}
+
+/** Point an already drawn scale at another year's figures. */
+function setScale(svg, r, says) {
+  const { cx } = SC;
+  const { deg, badge } = tilt(r);
+  svg.querySelector('.sc-beam').style.transform = `rotate(${deg}deg)`;
+  svg.querySelector('.sc-workers').style.transform = panShift(-1, deg);
+  svg.querySelector('.sc-owners').style.transform = panShift(1, deg);
+  svg.querySelector('.sc-workers .sc-amt').textContent = per100(r.workers);
+  svg.querySelector('.sc-workers .sc-label').textContent = `Workers${r.estimate ? ' (est.)' : ''}`;
+  svg.querySelector('.sc-owners .sc-amt').textContent = per100(r.owners);
+  const bw = badge.length * 8.2 + 24;
+  const rect = svg.querySelector('.sc-badge rect');
+  rect.setAttribute('x', cx - bw / 2);
+  rect.setAttribute('width', bw);
+  svg.querySelector('.sc-badge text').textContent = badge;
+  svg.setAttribute('aria-label', says);
+}
+
+/**
+ * Workers' and owners' $ per 100 over the years, as two lines on one axis, with a button per
+ * year underneath that sets the scale. Years without a workers figure have a gap.
+ */
+function timeline(years) {
+  const W = 340;
+  const H = 128;
+  const pad = { l: 34, r: 62, t: 12, b: 8 };
+  const n = years.length;
+  const x = (i) => pad.l + (n === 1 ? 0 : (i * (W - pad.l - pad.r)) / (n - 1));
+  const max = Math.max(...years.flatMap((y) => (y.r ? [y.r.workers, y.r.owners] : [])), 1);
+  const top = max <= 10 ? Math.ceil(max) : max <= 50 ? Math.ceil(max / 5) * 5 : Math.ceil(max / 10) * 10;
+  const y = (v) => H - pad.b - (v / top) * (H - pad.t - pad.b);
+  // A line through each run of years that have figures.
+  const line = (key) => {
+    let d = '';
+    let pen = 'M';
+    years.forEach((yr, i) => {
+      if (!yr.r) return void (pen = 'M');
+      d += `${pen}${x(i).toFixed(1)} ${y(yr.r[key]).toFixed(1)}`;
+      pen = 'L';
+    });
+    return d;
+  };
+  const dots = (key, color) =>
+    years
+      .map((yr, i) => (yr.r ? `<circle cx="${x(i)}" cy="${y(yr.r[key])}" r="4" fill="var(${color})" class="tl-dot" data-i="${i}"/>` : ''))
+      .join('');
+  // Direct labels at the right end, nudged apart when the lines end close together.
+  const last = [...years].reverse().find((yr) => yr.r).r;
+  let ly = { workers: y(last.workers), owners: y(last.owners) };
+  if (Math.abs(ly.workers - ly.owners) < 14) {
+    const mid = (ly.workers + ly.owners) / 2;
+    const up = last.owners >= last.workers ? 'owners' : 'workers';
+    ly = { [up]: mid - 7, [up === 'owners' ? 'workers' : 'owners']: mid + 7 };
+  }
+  const endX = x(n - 1) + 10;
+  return `
+      <div class="tl">
+        <div class="tl-head">
+          <span class="tl-title">Of every $100, over ${n} years</span>
+          <button type="button" class="tl-play" aria-label="Play ${n} years">${PLAY}</button>
+        </div>
+        <svg class="tl-chart" viewBox="0 0 ${W} ${H}" role="img"
+          aria-label="${esc(years.map((yr) => (yr.r ? `${yr.fy}: workers ${per100(yr.r.workers)}, owners ${per100(yr.r.owners)}` : `${yr.fy}: no workers figure`)).join('; '))}">
+          <line x1="${pad.l}" x2="${x(n - 1)}" y1="${y(0)}" y2="${y(0)}" class="tl-base"/>
+          <line x1="${pad.l}" x2="${x(n - 1)}" y1="${y(top)}" y2="${y(top)}" class="tl-grid"/>
+          <text x="${pad.l - 6}" y="${y(0) + 4}" class="tl-axis">$0</text>
+          <text x="${pad.l - 6}" y="${y(top) + 4}" class="tl-axis">$${top}</text>
+          <line class="tl-now" x1="${x(n - 1)}" x2="${x(n - 1)}" y1="${pad.t - 6}" y2="${y(0)}"/>
+          <path d="${line('workers')}" class="tl-line" stroke="var(--s4)"/>
+          <path d="${line('owners')}" class="tl-line" stroke="var(--s5)"/>
+          ${dots('workers', '--s4')}${dots('owners', '--s5')}
+          <text x="${endX}" y="${ly.workers + 4}" class="tl-label">Workers</text>
+          <text x="${endX}" y="${ly.owners + 4}" class="tl-label">Owners</text>
+          ${years.map((yr, i) => `<rect class="tl-hit" data-i="${i}" x="${x(i) - 22}" y="0" width="44" height="${H}"/>`).join('')}
+        </svg>
+        <div class="tl-years" role="group" aria-label="Show year">
+          ${years
+            .map(
+              (yr, i) =>
+                `<button type="button" data-i="${i}" style="left:${((x(i) / W) * 100).toFixed(2)}%" aria-pressed="${i === n - 1}"${yr.r ? '' : ' disabled title="No workers figure for this year"'}>${yr.fy}</button>`,
+            )
+            .join('')}
+        </div>
+      </div>`;
+}
+
+const PLAY = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg>';
+const PAUSE = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg>';
+
+// The workers vs owners play timer, stopped when another company is shown.
+let timer = null;
+
+/** The year buttons, chart hover and play button of the workers vs owners section. */
+function wireTimeline(root, d) {
+  clearInterval(timer);
+  timer = null;
+  const tl = root.querySelector('.tl');
+  if (!tl) return;
+  const years = versusYears(d);
+  const svg = root.querySelector('.vs .sc');
+  const sayEl = root.querySelector('.vs-says');
+  const yearEl = root.querySelector('.vs-year');
+  const play = tl.querySelector('.tl-play');
+  const chart = tl.querySelector('.tl-chart');
+  const xOf = (i) => tl.querySelector(`.tl-hit[data-i="${i}"]`);
+
+  const show = (i) => {
+    const { r, fy } = years[i];
+    if (!r) return;
+    const says = versusSays(r);
+    setScale(svg, r, says);
+    sayEl.textContent = says;
+    yearEl.textContent = fy;
+    tl.querySelectorAll('.tl-years button').forEach((b) => b.setAttribute('aria-pressed', +b.dataset.i === i));
+    tl.querySelectorAll('.tl-dot').forEach((c) => c.classList.toggle('on', +c.dataset.i === i));
+    const hit = xOf(i);
+    const cx = +hit.getAttribute('x') + 22;
+    const now = chart.querySelector('.tl-now');
+    now.setAttribute('x1', cx);
+    now.setAttribute('x2', cx);
+  };
+  const stop = () => {
+    clearInterval(timer);
+    timer = null;
+    play.innerHTML = PLAY;
+    play.setAttribute('aria-label', `Play ${years.length} years`);
+  };
+  show(years.length - 1);
+
+  tl.querySelector('.tl-years').addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    stop();
+    show(+b.dataset.i);
+  });
+  chart.addEventListener('click', (e) => {
+    const hit = e.target.closest('.tl-hit');
+    if (!hit) return;
+    stop();
+    show(+hit.dataset.i);
+  });
+  chart.querySelectorAll('.tl-hit').forEach((hit) => {
+    const yr = years[+hit.dataset.i];
+    hit.addEventListener('mouseenter', () => {
+      tooltip.innerHTML = yr.r
+        ? `<strong>${yr.fy}</strong>Workers${yr.r.estimate ? ' (est.)' : ''} ${per100(yr.r.workers)} · Owners ${per100(yr.r.owners)}<br>${esc(versusSays(yr.r))}`
+        : `<strong>${yr.fy}</strong>No workers figure in this year's filings`;
+      tooltip.hidden = false;
+    });
+    hit.addEventListener('mousemove', (e) => {
+      const w = tooltip.offsetWidth;
+      tooltip.style.left = `${Math.min(e.clientX + 12, window.innerWidth - w - 8)}px`;
+      tooltip.style.top = `${e.clientY + 16}px`;
+    });
+    hit.addEventListener('mouseleave', () => (tooltip.hidden = true));
+  });
+  play.addEventListener('click', () => {
+    if (timer) return stop();
+    const steps = years.map((_, i) => i).filter((i) => years[i].r);
+    let k = 0;
+    show(steps[k]);
+    play.innerHTML = PAUSE;
+    play.setAttribute('aria-label', 'Pause');
+    timer = setInterval(() => {
+      if (++k >= steps.length) return stop();
+      show(steps[k]);
+    }, 1200);
+  });
 }
 
 /** The CEO pay multiplier: CEO pay as a multiple of the median employee's, from the proxy. */
