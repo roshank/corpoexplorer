@@ -19,7 +19,7 @@ import { writeSectorStats } from './sectors.js';
 import { writeLeaders } from './leaders.js';
 
 // Bump when the shape or the logic of the per-company data changes, to force a rebuild.
-const DATA_VERSION = 16;
+const DATA_VERSION = 17;
 // Fiscal years shown in the workers vs owners history, including the latest.
 const HISTORY_YEARS = 5;
 // Reading earlier years for every company takes hours the first time, so a build stops reading

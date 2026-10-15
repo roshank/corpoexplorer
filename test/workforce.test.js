@@ -386,6 +386,7 @@ test('extractHeadcount reads the phrasings found in five years of 10-Ks', () => 
     ['The BRGs represent 53 chapters and more than 3,600 employees participating globally as of December 31, 2022.', null],
     ['In 2019, we achieved our goal of preparing and employing 1 million young people in underserved communities worldwide.', null],
     ['(b) Includes approximately 2,800 employees in OxyChem.', null],
+    ['We estimate that pMN affects approximately 150,000 people in the U.S. and Europe, and more than 600,000 people globally.', null],
   ];
   for (const [text, n] of cases) assert.equal(extractHeadcount(text), n, text);
 });
