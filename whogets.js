@@ -24,7 +24,7 @@ export function whoGets(d) {
   const w = d.workforce;
   if (s.employees?.payLine) {
     workers = { per100: s.employees.payLine.per100, value: s.employees.payLine.value, source: 'reported' };
-  } else if (w?.employees && w?.medianPay) {
+  } else if (w?.employees && w?.medianPay && !w.outlier?.length) {
     const value = w.employees * w.medianPay;
     workers = { per100: cents((value / d.totalRevenue) * 100), value, source: 'estimate', employees: w.employees, medianPay: w.medianPay, payYear: w.payYear };
   }
@@ -34,7 +34,8 @@ export function whoGets(d) {
     workers = null;
     workersMissing = 'implausible';
   } else if (!workers) {
-    workersMissing = !w?.employees ? 'headcount' : 'medianPay';
+    // A headcount or median pay out of line with the company's other years (flagOutliers).
+    workersMissing = w?.outlier?.length && !s.employees?.payLine ? 'implausible' : !w?.employees ? 'headcount' : 'medianPay';
   }
 
   // Governments, split between US federal, US state and local, and abroad when the filing breaks it down.
