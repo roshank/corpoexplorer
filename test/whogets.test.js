@@ -99,3 +99,11 @@ test('an earlier year, with only what the history keeps, gives workers vs owners
   };
   assert.deepEqual(ownersToWorkers(whoGets(year)), { ratio: 0.5, workers: 20, owners: 10, estimate: true });
 });
+
+test('whoGets leaves out a workers estimate built on a flagged figure', () => {
+  const c = company();
+  c.workforce.outlier = ['employees'];
+  const w = whoGets(c);
+  assert.equal(w.workers, null);
+  assert.equal(w.workersMissing, 'implausible');
+});

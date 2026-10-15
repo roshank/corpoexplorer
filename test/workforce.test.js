@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { extractHeadcount, extractMedianPay, findMedianPay, findMedianPayNearRatio, findPayRatio } from '../lib/workforce.js';
+import { extractHeadcount, extractMedianPay, findMedianPay, findMedianPayNearRatio, findPayRatio, flagOutliers } from '../lib/workforce.js';
 
 test('extractHeadcount finds the total, not subsets or other years', () => {
   assert.equal(extractHeadcount('As of December 31, 2025, we employed approximately 1,576,000 full-time and part-time employees.'), 1576000);
@@ -344,4 +344,21 @@ test('findMedianPay reads across a page break', () => {
   const text =
     'Mr. Musk’s 2023 annual total compensation was $0, and the median 2023 annual total compensation of all other qualifying ¶ 2024 Proxy Statement 135 ¶ TABLE OF CONTENTS ¶ employees, as determined pursuant to the methodology set forth below, was $45,811.';
   assert.equal(findMedianPay(text)?.pay, 45811);
+});
+
+test('flagOutliers leaves out a headcount or median pay far from the other years', () => {
+  const ys = (key, values, totalRevenue = 1e10) => values.map((v) => ({ totalRevenue, workforce: { [key]: v } }));
+  const flagged = (years) => flagOutliers(years).map((y) => (y.workforce.outlier ? y.workforce.outlier.join() : ''));
+  // A misread past year (Medtronic 2024: "1,500").
+  assert.deepEqual(flagged(ys('employees', [95000, 95000, 1500, 101867, 101876])), ['', '', 'employees', '', '']);
+  // The latest year agrees with one other: it wins over three wrong ones (Ecolab's $180,000).
+  assert.deepEqual(flagged(ys('medianPay', [53462, 50143, 180000, 180000, 170000])), ['', '', 'medianPay', 'medianPay', 'medianPay']);
+  // A misread latest year, alone and far off: the other years win (ON Semiconductor: 2,400).
+  assert.deepEqual(flagged(ys('employees', [2400, 26400, 30000, 31000, 30000])), ['employees', '', '', '', '']);
+  // Growth by acquisition (TKO: 1,250 to 4,000) isn't a misread.
+  assert.deepEqual(flagged(ys('employees', [4000, 1300, 1250])), ['', '', '']);
+  // A headcount the revenue can't pay for (Principal Financial's "3 million").
+  assert.deepEqual(flagged(ys('employees', [19700, 3000000, 2900000, 2700000], 1.6e10)), ['', 'employees', 'employees', 'employees']);
+  // Too few years to judge.
+  assert.deepEqual(flagged(ys('employees', [2400, 26400])), ['', '']);
 });

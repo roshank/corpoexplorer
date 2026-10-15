@@ -13,6 +13,7 @@ import { annualReportHistory, companyFromFiling, getTickers, latestAnnualReport,
 import { getFederalAwards } from '../lib/usaspending.js';
 import { companyName, fetchSp500 } from '../lib/sp500.js';
 import { stamp } from './stamp.js';
+import { flagOutliers } from '../lib/workforce.js';
 import { coverage } from './coverage.js';
 import { writeSectorStats } from './sectors.js';
 import { writeLeaders } from './leaders.js';
@@ -115,6 +116,8 @@ for (const co of queue) {
       if (old?.history) data.history = old.history;
       console.log(`  warn  ${tag}: history: ${err.message}`);
     }
+    // A headcount or median pay far out of line with the company's other years is left out.
+    if (data.workforce) flagOutliers([data, ...(data.history ?? [])].filter((y) => y.workforce));
     data.name = companyName(data.name, indexName.get(co.cik));
     if (JSON.stringify(data) !== JSON.stringify(old)) await writeFile(file, JSON.stringify(data));
     built.push({ co, name: data.name });

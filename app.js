@@ -480,18 +480,19 @@ function versusYears(d) {
  * chart of both over time picks the year the scale shows, and play steps through them.
  */
 function versusSection(d, w) {
-  const r = ownersToWorkers(w);
+  const years = versusYears(d);
+  const known = years.filter((y) => y.r);
+  // Without a figure for the latest year, the scale starts on the most recent year that has one.
+  const r = ownersToWorkers(w) ?? (known.length > 1 ? known.at(-1).r : null);
   if (!r) return '';
   const est = r.estimate ? ' (est.)' : '';
   const says = versusSays(r);
   const typical = sectors[d.sector]?.ownersToWorkers;
   const context = typical != null ? ` Typical in ${esc(d.sector)}: owners get ${times(typical)}× what workers get.` : '';
-  const years = versusYears(d);
-  const known = years.filter((y) => y.r);
   return `
     <section class="vs" aria-label="Workers vs owners">
       <h3 class="vs-head">Workers vs owners <span>Who gets more?</span></h3>
-      ${known.length > 1 ? `<p class="vs-year" aria-live="polite">${years.at(-1).fy}</p>` : ''}
+      ${known.length > 1 ? `<p class="vs-year" aria-live="polite">${known.at(-1).fy}</p>` : ''}
       ${scale(r, est, says)}
       <p class="vs-says">${says}</p>
       ${known.length > 1 ? timeline(years) : ''}
@@ -640,7 +641,7 @@ function timeline(years) {
           ${years
             .map(
               (yr, i) =>
-                `<button type="button" data-i="${i}" style="left:${((x(i) / W) * 100).toFixed(2)}%" aria-pressed="${i === n - 1}"${yr.r ? '' : ' disabled title="No workers figure for this year"'}>${yr.fy}</button>`,
+                `<button type="button" data-i="${i}" style="left:${((x(i) / W) * 100).toFixed(2)}%" aria-pressed="false"${yr.r ? '' : ' disabled title="No workers figure for this year"'}>${yr.fy}</button>`,
             )
             .join('')}
         </div>
@@ -688,7 +689,7 @@ function wireTimeline(root, d) {
     play.innerHTML = PLAY;
     play.setAttribute('aria-label', `Play ${years.length} years`);
   };
-  show(years.length - 1);
+  show(years.findLastIndex((y) => y.r));
 
   tl.querySelector('.tl-years').addEventListener('click', (e) => {
     const b = e.target.closest('button');
