@@ -69,6 +69,7 @@ Requires Node 20+. There are no dependencies to install.
   - **Owners:** dividends and buybacks.
   - **Kept by the company:** profit left after dividends and buybacks. Negative when a company paid out more than it earned.
   A line underneath shows how much of the $100 came from the government.
+- **Top 5 lists** (home page): the companies whose $100 goes most to workers, owners (dividends and buybacks) and governments (income taxes), that get the most from the government (as a customer or through federal awards), and that keep the most to reinvest (profit after payouts). Per $100 of revenue in the latest 10-K, built with the data (`scripts/leaders.js` → `data/leaders.json`). A row opens that company.
 - **Workers vs owners** (under Owners' profit): a balance scale of pay to workers against dividends and buybacks, per $100. Below it, both over the company's last five fiscal years; pick a year, or press play, and the scale tips year by year. Earlier years are read from each year's own 10-K and proxy statement, the same way as the latest (`yearFromFiling` in `lib/sec.js`), and kept in the company file as `history`. Past filings don't change, so a year already read is reused; a year whose filings lack a headcount or median pay shows as a gap.
 - **Show details:** filing labels, agency lists and method notes are hidden until the reader turns them on (remembered in the browser).
 - Rows under 1¢ per $100 in the Government money & taxes card are combined into one row.
@@ -90,6 +91,7 @@ explain.js         Plain-English explanations for the "Where it goes" rows
 whogets.js         The five-way split of the $100
 data/              Pre-built company data the site reads
 scripts/build-data.js   Builds data/ from SEC filings
+scripts/leaders.js      The home page's top 5 lists (data/leaders.json)
 lib/sec.js         EDGAR fetching (throttled, with retries)
 lib/xbrl.js        Instance, label and presentation parsing (no dependencies)
 lib/breakdown.js   Picks the revenue breakdowns and turns them into $ per 100
