@@ -613,6 +613,129 @@ h3.first {
   font-weight: 500;
 }
 
+/* Top 5 lists on the home page. */
+.leaders {
+  margin: 28px 0 8px;
+}
+.has-company .leaders {
+  display: none;
+}
+.leaders h2 {
+  margin: 0;
+  font-size: 22px;
+  text-align: center;
+}
+.leaders-lede {
+  margin: 6px 0 18px;
+  text-align: center;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+.leaders-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+.leader-list {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.leader-list h3 {
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--ink);
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+.leader-list h3 .sub {
+  text-transform: none;
+  letter-spacing: normal;
+  display: block;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ink-2);
+}
+.leader-list ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: rank;
+}
+.leader-list li {
+  counter-increment: rank;
+}
+.leader-list button {
+  display: grid;
+  grid-template-columns: 18px 1fr auto;
+  grid-template-areas: 'rank name amt' '. bar bar';
+  column-gap: 8px;
+  row-gap: 4px;
+  align-items: baseline;
+  width: 100%;
+  padding: 7px 6px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.leader-list button::before {
+  content: counter(rank);
+  grid-area: rank;
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.leader-list button:hover,
+.leader-list button:focus-visible {
+  background: var(--page);
+}
+.ld-name {
+  grid-area: name;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+.ld-tk {
+  margin-left: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.ld-amt {
+  grid-area: amt;
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.ld-est {
+  margin-left: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.ld-bar {
+  grid-area: bar;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--hairline);
+}
+.ld-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--c);
+}
+
 /* Once a company is showing, the intro shrinks to just the search */
 .has-company .hero {
   padding: 20px 0 4px;

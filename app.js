@@ -105,6 +105,59 @@ chips.addEventListener('click', (e) => {
   if (b) go(b.dataset.ticker);
 });
 
+/* ---------- Top 5 lists on the home page ---------- */
+
+// [key in data/leaders.json, title, what it counts, color, icon]
+const LEADER_LISTS = [
+  ['workers', 'Most to workers', 'Pay to employees', '--s4', 'workers'],
+  ['owners', 'Most to owners', 'Dividends and buybacks', '--s5', 'owners'],
+  ['governments', 'Most to governments', 'Income taxes', '--s7', 'governments'],
+  ['fromGovernment', 'Most from the government', 'As a customer or through federal awards', '--s7', 'governments'],
+  ['kept', 'Most kept to reinvest', 'Profit left after dividends and buybacks', '--s3', 'kept'],
+];
+
+fetch(dataUrl('data/leaders.json'))
+  .then((r) => (r.ok ? r.json() : null))
+  .then((data) => {
+    if (!data) return;
+    const el = $('#leaders');
+    const lists = LEADER_LISTS.filter(([key]) => data[key]?.length);
+    if (!lists.length) return;
+    el.innerHTML = `
+      <h2 id="leaders-head">Who gets the most of every $100?</h2>
+      <p class="leaders-lede">Top 5 in the S&amp;P 500 for each, per $100 of revenue in their latest annual report.</p>
+      <div class="leaders-grid">
+        ${lists
+          .map(
+            ([key, title, what, color, icon]) => `
+        <div class="leader-list" style="--c:var(${color})">
+          <h3><span class="who-icon">${ICONS[icon]}</span><span>${title}<span class="sub">${what}</span></span></h3>
+          <ol>
+            ${data[key]
+              .map(
+                (r) => `
+            <li><button type="button" data-ticker="${esc(r.ticker)}">
+              <span class="ld-name">${esc(shortName(displayName(r.name)))}<span class="ld-tk">${esc(r.ticker)}</span></span>
+              <span class="ld-amt">${per100(r.per100)}${r.estimate ? '<span class="ld-est" title="At least: employees × median pay">est.</span>' : ''}</span>
+              <span class="ld-bar"><span style="width:${Math.min(r.per100, 100)}%"></span></span>
+            </button></li>`,
+              )
+              .join('')}
+          </ol>
+        </div>`,
+          )
+          .join('')}
+      </div>`;
+    el.hidden = false;
+    el.addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-ticker]');
+      if (!b) return;
+      go(b.dataset.ticker);
+      window.scrollTo({ top: 0 });
+    });
+  })
+  .catch(() => {});
+
 /* ---------- Loading a company ---------- */
 
 let requestId = 0;

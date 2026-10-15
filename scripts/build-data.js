@@ -15,6 +15,7 @@ import { companyName, fetchSp500 } from '../lib/sp500.js';
 import { stamp } from './stamp.js';
 import { coverage } from './coverage.js';
 import { writeSectorStats } from './sectors.js';
+import { writeLeaders } from './leaders.js';
 
 // Bump when the shape or the logic of the per-company data changes, to force a rebuild.
 const DATA_VERSION = 15;
@@ -174,6 +175,9 @@ console.log(
 
 // Typical figures per sector, for context on each page.
 await writeSectorStats();
+
+// The home page's top 5 lists.
+await writeLeaders();
 
 // What each part of the page covers, and results that look wrong (data/coverage.md).
 await coverage();
