@@ -9,7 +9,7 @@
 | Where it comes from | 496 | 100% |
 | Where it goes | 498 | 100% |
 | Itemized costs | 497 | 100% |
-| Workers | 493 | 99% |
+| Workers | 494 | 99% |
 | CEO pay multiplier | 495 | 99% |
 | US vs abroad taxes | 370 | 74% |
 
@@ -24,19 +24,18 @@
 | Financials | 76 | 100% | 100% | 99% | 100% | 100% | 82% |
 | Health Care | 60 | 100% | 100% | 100% | 98% | 100% | 73% |
 | Industrials | 82 | 100% | 100% | 100% | 99% | 98% | 85% |
-| Information Technology | 75 | 100% | 100% | 100% | 97% | 99% | 71% |
+| Information Technology | 75 | 100% | 100% | 100% | 99% | 99% | 71% |
 | Materials | 24 | 100% | 100% | 100% | 100% | 100% | 58% |
 | Real Estate | 30 | 97% | 100% | 100% | 100% | 100% | 43% |
 | Utilities | 31 | 100% | 100% | 100% | 100% | 100% | 68% |
 
-## Worth a look (2)
+## Worth a look (1)
 
 Unusual results. Often the filing was read wrong, but some are real (a net tax benefit, a very profitable year).
 
 | Ticker | Company | Why |
 | --- | --- | --- |
-| INCY | Incyte | workers estimate implausible |
-| ON | ON Semiconductor | workers estimate implausible |
+| VRTX | Vertex Pharmaceuticals | workers estimate implausible |
 
 <details>
 <summary>Checked and real (42)</summary>
@@ -161,7 +160,6 @@ Unusual results checked against the filing (`REVIEWED` in `scripts/coverage.js`)
 | HPQ | Information Technology | US vs abroad taxes |
 | IBM | Information Technology | US vs abroad taxes |
 | IFF | Materials | US vs abroad taxes |
-| INCY | Health Care | Workers |
 | INTC | Information Technology | US vs abroad taxes |
 | INVH | Real Estate | US vs abroad taxes |
 | IP | Materials | US vs abroad taxes |
@@ -183,7 +181,7 @@ Unusual results checked against the filing (`REVIEWED` in `scripts/coverage.js`)
 | NEE | Utilities | US vs abroad taxes |
 | NI | Utilities | US vs abroad taxes |
 | NTAP | Information Technology | US vs abroad taxes |
-| ON | Information Technology | Workers, US vs abroad taxes |
+| ON | Information Technology | US vs abroad taxes |
 | ORCL | Information Technology | US vs abroad taxes |
 | ORLY | Consumer Discretionary | US vs abroad taxes |
 | PANW | Information Technology | US vs abroad taxes |
@@ -217,6 +215,7 @@ Unusual results checked against the filing (`REVIEWED` in `scripts/coverage.js`)
 | UNH | Health Care | US vs abroad taxes |
 | VMC | Materials | US vs abroad taxes |
 | VMRK | Real Estate | US vs abroad taxes |
+| VRTX | Health Care | Workers |
 | VTR | Real Estate | US vs abroad taxes |
 | VTRS | Health Care | US vs abroad taxes |
 | WAT | Health Care | US vs abroad taxes |
