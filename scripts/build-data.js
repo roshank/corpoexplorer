@@ -102,9 +102,10 @@ for (const co of queue) {
     }
     // Agencies keep reporting awards after the year ends, so these are refreshed every build.
     try {
-      // By the SEC's legal name as well: the page's name ("Northrop Grumman") can lack the legal form
-      // USAspending lists ("NORTHROP GRUMMAN CORPORATION").
-      data.federal = await getFederalAwards(co.ticker, [co.name, data.name], data.fiscalYearEnd);
+      // By every name we have: the page's name ("Northrop Grumman") can lack the legal form
+      // USAspending lists ("NORTHROP GRUMMAN CORPORATION"), and the SEC's can have one it doesn't
+      // ("M&T BANK CORP" for "M AND T BANK").
+      data.federal = await getFederalAwards(co.ticker, [co.name, data.name, indexName.get(co.cik)], data.fiscalYearEnd);
     } catch (err) {
       // The service is down now and then: keep the last figures rather than none.
       if (old?.federal) data.federal = old.federal;
