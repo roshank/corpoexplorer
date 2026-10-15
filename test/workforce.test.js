@@ -359,6 +359,41 @@ test('flagOutliers leaves out a headcount or median pay far from the other years
   assert.deepEqual(flagged(ys('employees', [4000, 1300, 1250])), ['', '', '']);
   // A headcount the revenue can't pay for (Principal Financial's "3 million").
   assert.deepEqual(flagged(ys('employees', [19700, 3000000, 2900000, 2700000], 1.6e10)), ['', 'employees', 'employees', 'employees']);
+  // A spin-off: fewer employees, and less revenue with them (GE).
+  const ge = [
+    [45e9, 53000],
+    [38e9, 52000],
+    [68e9, 125000],
+    [74e9, 172000],
+    [74e9, 168000],
+  ].map(([totalRevenue, employees]) => ({ totalRevenue, workforce: { employees } }));
+  assert.deepEqual(flagged(ge), ['', '', '', '', '']);
   // Too few years to judge.
   assert.deepEqual(flagged(ys('employees', [2400, 26400])), ['', '']);
+});
+
+test('extractHeadcount reads the phrasings found in five years of 10-Ks', () => {
+  const cases = [
+    ['Medtronic has 95,000+ full-time employees, of which 44% are based in the U.S.', 95000],
+    ['As of December 31, 2022, we had approximately 74,300 full-time equivalent (FTE) employees.', 74300],
+    ['As of December 31, 2022, the Company had 3,543 full time, part-time, and temporary employees, a 10% increase.', 3543],
+    ['Human Capital ¶ Approximately 58,000 employees worldwide (including employees from the recent Poly acquisition), power HP’s innovation.', 58000],
+    ['As of December 31, 2025, we had approximately 22,600 regular full‑time employees and about 70 part‑time or temporary employees across 33 countries.', 22600],
+    [
+      'We prioritize the recruitment, development, recognition and retention of the 55,943 employees worldwide that we had as of December 31, 2022.',
+      55943,
+    ],
+    ['The BRGs represent 53 chapters and more than 3,600 employees participating globally as of December 31, 2022.', null],
+    ['In 2019, we achieved our goal of preparing and employing 1 million young people in underserved communities worldwide.', null],
+    ['(b) Includes approximately 2,800 employees in OxyChem.', null],
+  ];
+  for (const [text, n] of cases) assert.equal(extractHeadcount(text), n, text);
+});
+
+test('findMedianPay skips benchmark medians in the director pay section', () => {
+  const text =
+    'The cash retainer was increased to align director compensation with the market median range: the Committee Chair retainer was increased by $5,000 to $20,000. ¶ For 2022, the median of the annual total compensation of all of our coworkers, other than Ms. Leahy, was $107,403.';
+  assert.equal(findMedianPay(text)?.pay, 107403);
+  const peer = 'increased the annual additional retainer from $40,000 to $65,000 to align with peer median levels. ¶ the median of the annualized total compensation of all employees of our Company (other than our CEO), was $295,914;';
+  assert.equal(findMedianPay(peer)?.pay, 295914);
 });
