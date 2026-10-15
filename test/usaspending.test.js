@@ -70,3 +70,12 @@ test('fiscalYear is the year ending on the 10-K period end', () => {
   assert.deepEqual(fiscalYear('2024-12-31'), { start_date: '2024-01-01', end_date: '2024-12-31' });
   assert.deepEqual(fiscalYear('2025-09-27'), { start_date: '2024-09-28', end_date: '2025-09-27' });
 });
+
+test('matchRecipients matches the SEC legal name when the display name lacks the legal form', () => {
+  const results = [
+    { id: 'p', name: 'NORTHROP GRUMMAN CORPORATION', recipient_level: 'P' },
+    { id: 'c', name: 'NORTHROP GRUMMAN SYSTEMS CORP', recipient_level: 'C' },
+  ];
+  assert.deepEqual(matchRecipients(results, 'Northrop Grumman').map((r) => r.id), []);
+  assert.deepEqual(matchRecipients(results, ['NORTHROP GRUMMAN CORP /DE/', 'Northrop Grumman']).map((r) => r.id), ['p']);
+});

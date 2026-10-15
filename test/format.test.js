@@ -6,6 +6,8 @@ test('displayName title-cases all-caps SEC names only', () => {
   assert.equal(displayName('MICROSOFT CORPORATION'), 'Microsoft Corporation');
   assert.equal(displayName('COCA COLA CO'), 'Coca Cola Co');
   assert.equal(displayName('Apple Inc.'), 'Apple Inc.');
+  assert.equal(displayName('MSCI'), 'MSCI');
+  assert.equal(displayName('IQVIA'), 'IQVIA');
 });
 
 test('shortName drops legal suffixes', () => {

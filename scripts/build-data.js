@@ -19,7 +19,7 @@ import { writeSectorStats } from './sectors.js';
 import { writeLeaders } from './leaders.js';
 
 // Bump when the shape or the logic of the per-company data changes, to force a rebuild.
-const DATA_VERSION = 15;
+const DATA_VERSION = 17;
 // Fiscal years shown in the workers vs owners history, including the latest.
 const HISTORY_YEARS = 5;
 // Reading earlier years for every company takes hours the first time, so a build stops reading
@@ -102,7 +102,10 @@ for (const co of queue) {
     }
     // Agencies keep reporting awards after the year ends, so these are refreshed every build.
     try {
-      data.federal = await getFederalAwards(co.ticker, data.name, data.fiscalYearEnd);
+      // By every name we have: the page's name ("Northrop Grumman") can lack the legal form
+      // USAspending lists ("NORTHROP GRUMMAN CORPORATION"), and the SEC's can have one it doesn't
+      // ("M&T BANK CORP" for "M AND T BANK").
+      data.federal = await getFederalAwards(co.ticker, [co.name, data.name, indexName.get(co.cik)], data.fiscalYearEnd);
     } catch (err) {
       // The service is down now and then: keep the last figures rather than none.
       if (old?.federal) data.federal = old.federal;

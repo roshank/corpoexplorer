@@ -257,3 +257,20 @@ test('a gain or loss on deferred compensation plans is not employee pay', () => 
   assert.equal(pay('Salaries, wages and benefits'), true);
   assert.equal(pay('Compensation and benefits'), true);
 });
+
+test('payouts: company dividend tags, declared dividends, equity-statement buybacks, no negative payments', async () => {
+  const { companyDividendTags, companyBuybackTags } = await import('../lib/spending.js');
+  const facts = new Map([
+    ['spg:PaymentsOfOrdinaryDividendsCommonStockAndPreferredStock', 2793],
+    ['us-gaap:PaymentsOfDividendsMinorityInterest', 439],
+    ['trgp:PaymentsOfDividendsToNoncontrollingInterests', 34],
+    ['pgr:PaymentsforRepurchaseofCommonStockintheOpenMarket', 74],
+    ['pgr:PaymentsforRepurchaseofCommonStockforRestrictedStockTaxLiabilities', 92],
+  ]);
+  assert.deepEqual(companyDividendTags(facts), ['spg:PaymentsOfOrdinaryDividendsCommonStockAndPreferredStock']);
+  assert.deepEqual(companyBuybackTags(facts), ['pgr:PaymentsforRepurchaseofCommonStockintheOpenMarket']);
+  // Not pay: one-off compensation around an acquisition (Cardinal Health).
+  const rule = PLAIN_BY_LABEL.find(([, , tag]) => tag === 'employees')[0];
+  assert.equal(rule.test('Acquisition-related cash and share-based compensation costs'), false);
+  assert.equal(rule.test('Salaries and employee benefits'), true);
+});
