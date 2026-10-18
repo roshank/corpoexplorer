@@ -4,7 +4,8 @@ const SMALL = new Set(['and', 'of', 'the', 'or', '&']);
 
 /** "MICROSOFT CORPORATION" -> "Microsoft Corporation". Mixed-case names are left alone. */
 export function displayName(name) {
-  if (name !== name.toUpperCase()) return name;
+  // Mixed case is already right; so is a one-word brand in capitals (IBM, MSCI, IQVIA, AT&T, 3M).
+  if (name !== name.toUpperCase() || !/\s/.test(name.trim())) return name;
   return name
     .toLowerCase()
     .split(/(\s+)/)
